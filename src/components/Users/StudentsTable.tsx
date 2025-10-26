@@ -57,6 +57,11 @@ const StudentsTable: React.FC<StudentsTableProps> = ({ sectionId }) => {
   const limit = 10
   const groupId = "";
 
+  // useEffect(() => { 
+  //   console.log("Section ID changed:", sectionId);
+  //   setPage(1);
+  // }, [sectionId]);
+
   // -------------------- Debounce search input --------------------
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -74,6 +79,10 @@ const StudentsTable: React.FC<StudentsTableProps> = ({ sectionId }) => {
     enabled: !!sectionId && !!groupId
   })
 
+  useEffect(() => { 
+    console.log("Group ID changed:", groupId);
+    console.log(data);
+  },[isLoading]);
   const handleRemove = async (userId: string) => {
     try {
       await axios.delete(

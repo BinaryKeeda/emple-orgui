@@ -295,8 +295,8 @@ const Dashboard: React.FC = () => {
   const user = useSelector((s:RootState) => s.auth.user?.user);
   const groudId = useSelector(getGroupOwnerShip);
   const userId = user?.role === "campus-admin" ? user._id : undefined;
-  const { data } = useSections(groudId ?? "", userId);
-
+  const { data  , error} = useSections(groudId ?? "", userId);
+  if(error) return <>{JSON.stringify(error)}</>
 
   const handleCreateSection = async (name: string, logoFile?: File) => {
     if (!groudId) return setMessage('No group assigned')

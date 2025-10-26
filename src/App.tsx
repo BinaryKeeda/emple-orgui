@@ -10,47 +10,56 @@ import Loader from './Layout/Loader'
 
 // Pages (lazy imports)
 const Login = React.lazy(() => import('./pages/Login'))
-const Dashboard = React.lazy(() => import('./pages/Dashboard'))
+const AdminDashboard = React.lazy(() => import('./pages/AdminDashboard'))
+const SuperAdminDashboard = React.lazy(() => import('./pages/SuperAdminDashboard'))
 const SectionEdit = React.lazy(() => import('./pages/SectionEdit'))
 const QuizList = React.lazy(() => import('./pages/QuizList'))
 const TestList = React.lazy(() => import('./pages/TestList'))
 const ManageUsers = React.lazy(() => import('./pages/ManageUsers'))
 
-// Simple inline components (no need for lazy)
-const EditQuiz = React.lazy(() => import('./pages/QuizEdit'));
-const EditTest = React.lazy(() => import('./pages/TestEdit'));
-
-const PreviewQuiz = React.lazy(() => import('./pages/QuizPreview'));
-const PreviewTest = React.lazy(() => import('./pages/TestPreview'));
+// Editor + Preview
+const EditQuiz = React.lazy(() => import('./pages/QuizEdit'))
+const EditTest = React.lazy(() => import('./pages/TestEdit'))
+const PreviewQuiz = React.lazy(() => import('./pages/QuizPreview'))
+const PreviewTest = React.lazy(() => import('./pages/TestPreview'))
 
 const App: React.FC = () => {
-  const { loading } = useSelector((s: RootState) => s.auth)
+  const { loading, user } = useSelector((s: RootState) => s.auth)
   const dispatch = useDispatch<AppDispatch>()
 
   useEffect(() => {
     dispatch(fetchProfile())
   }, [dispatch])
 
-  if (loading) return <><Loader/></>
+  if (loading) return <Loader />
 
   return (
     <Router>
-      <Suspense fallback={<><Loader/></>}>
+      <Suspense fallback={<Loader />}>
         <Routes>
           {/* Public Route */}
           <Route path="/" element={<UserRoute />}>
             <Route index element={<Login />} />
           </Route>
 
-          {/* Superadmin-only dashboard */}
+          {/* Dashboard (Superadmin OR Admin) */}
           <Route
             path="/dashboard"
-            element={<RoleBasedRoute requiredRole={['campus-superadmin' , 'campus-admin']} />}
+            element={
+              <RoleBasedRoute requiredRole={['campus-superadmin', 'campus-admin']} />
+            }
           >
-            <Route index element={<Dashboard />} />
+            <Route
+              index
+              element={
+                user?.user.role === 'campus-admin'
+                  ? <AdminDashboard />
+                  : <SuperAdminDashboard />
+              }
+            />
           </Route>
 
-          {/* Admin + Superadmin dashboard */}
+          {/* Section routes (Admin + Superadmin) */}
           <Route
             element={
               <RoleBasedRoute requiredRole={['campus-admin', 'campus-superadmin']} />

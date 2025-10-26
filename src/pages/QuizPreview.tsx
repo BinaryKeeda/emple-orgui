@@ -85,9 +85,9 @@ const QuizPreview: React.FC = () => {
       </div>
     );
 
-  const submissions = data?.submissions.list ?? [];
-  const defaulters = data?.defaulters.list ?? [];
-  const totalPages = data?.submissions.totalPages ?? 1;
+  const submissions = data?.submissions?.list ?? [];
+  const defaulters = data?.defaulters?.list ?? [];
+  const totalPages = data?.submissions?.totalPages ?? 1;
 
   return (
     <div className="p-6 flex flex-col gap-8">
