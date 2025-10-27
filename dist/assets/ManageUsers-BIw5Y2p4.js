@@ -1,1 +1,0 @@
-import{j as r}from"./index-BleUSNif.js";import{S as t}from"./StudentsTable-wA7lo-BJ.js";import"./useQuery-CwtpQRrE.js";import"./TextField-DnNz_6T2.js";import"./index-CC0QQhHT.js";import"./Search-BKamjSsQ.js";import"./Typography-C5SW0ez1.js";import"./Delete-gyXVxn02.js";function u(){return r.jsx(r.Fragment,{children:r.jsx(t,{})})}export{u as default};
