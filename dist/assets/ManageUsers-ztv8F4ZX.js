@@ -1,1 +1,0 @@
-import{j as r}from"./index-CEMFlCi4.js";import{S as t}from"./StudentsTable-Cpie2ETq.js";import"./useQuery-BmKnonjR.js";import"./TextField-CBgjTSJO.js";import"./index-Cop6QSZX.js";import"./Search-islkSO9J.js";import"./Typography-Bh9Wa-AS.js";import"./Delete-iHuC7UhI.js";function u(){return r.jsx(r.Fragment,{children:r.jsx(t,{})})}export{u as default};

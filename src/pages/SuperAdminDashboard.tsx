@@ -287,7 +287,9 @@ const SuperAdminDashboard: React.FC = () => {
   const user = useSelector((s: RootState) => s.auth.user?.user)
   const groudId = useSelector(getGroupOwnerShip)
   const userId = user?.role === 'campus-admin' ? user._id : undefined
-  const { data, error, isLoading } = useSections(groudId ?? '', userId)
+
+  // 👇 Include refetch here
+  const { data, error, isLoading, refetch } = useSections(groudId ?? '', userId)
 
   if (error) return <>{JSON.stringify(error)}</>
 
@@ -299,12 +301,15 @@ const SuperAdminDashboard: React.FC = () => {
       formData.append('name', name)
       formData.append('groupId', groudId)
       if (logoFile) formData.append('logo', logoFile)
+
       await axios.post(BASE_URL + '/api/campus/create/section', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         withCredentials: true,
       })
+
       setMessage('Section created successfully!')
       setModalOpen(false)
+      await refetch() // 🔥 refresh after create
     } catch (err: any) {
       console.error(err)
       setMessage(err.response?.data?.message || 'Error creating section')
@@ -316,8 +321,11 @@ const SuperAdminDashboard: React.FC = () => {
   const handleDelete = async (id: string) => {
     try {
       setLoading(true)
-      await axios.post(BASE_URL + '/api/campus/delete/section/' + id, {}, { withCredentials: true })
+      await axios.post(BASE_URL + '/api/campus/delete/section/' + id, {}, {
+        withCredentials: true,
+      })
       setMessage('Section deleted successfully!')
+      await refetch() // 🔥 refresh after delete
     } catch (err: any) {
       console.error(err)
       setMessage(err.response?.data?.message || 'Error deleting section')
