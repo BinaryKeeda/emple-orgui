@@ -18,7 +18,7 @@ const TestList = React.lazy(() => import('./pages/TestList'))
 const ManageUsers = React.lazy(() => import('./pages/ManageUsers'))
 
 // Editor + Preview
-const EditQuiz = React.lazy(() => import('./pages/QuizEdit'))
+const EditQuiz = React.lazy(() => import('./pages/QuizEdit'));
 const EditTest = React.lazy(() => import('./pages/TestEdit'))
 const PreviewQuiz = React.lazy(() => import('./pages/QuizPreview'))
 const PreviewTest = React.lazy(() => import('./pages/TestPreview'))

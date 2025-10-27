@@ -17,11 +17,9 @@ import {
 } from '@mui/material'
 import { Delete, Search } from '@mui/icons-material'
 import { useQuery } from '@tanstack/react-query'
+import { useParams } from 'react-router-dom'
 
-// -------------------- Types --------------------
-interface StudentsTableProps {
-  sectionId: string
-}
+// -------------------- User Interface --------------------
 
 interface User {
   _id: string
@@ -37,25 +35,26 @@ interface User {
 // -------------------- Fetch Function --------------------
 const fetchStudents = async (
   sectionId: string,
-  groupId: string | undefined,
   page: number,
   limit: number,
   search: string
 ) => {
   const res = await axios.get(
-    `${BASE_URL}/api/campus/students/${sectionId}/${groupId}?page=${page}&limit=${limit}&search=${search}`,
+    `${BASE_URL}/api/campus/students/${sectionId}/?page=${page}&limit=${limit}&search=${search}`,
     { withCredentials: true }
   )
+  console.log(res.data);
   return res.data
 }
 
 // -------------------- StudentsTable --------------------
-const StudentsTable: React.FC<StudentsTableProps> = ({ sectionId }) => {
+const StudentsTable: React.FC<{}> = ({}) => {
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState(search)
   const [page, setPage] = useState(1)
   const limit = 10
   const groupId = "";
+  const {id:sectionId} = useParams<string>();
 
   // useEffect(() => { 
   //   console.log("Section ID changed:", sectionId);
@@ -75,8 +74,7 @@ const StudentsTable: React.FC<StudentsTableProps> = ({ sectionId }) => {
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['students', sectionId, groupId, page, debouncedSearch],
     queryFn: () =>
-      fetchStudents(sectionId, groupId, page, limit, debouncedSearch),
-    enabled: !!sectionId && !!groupId
+      fetchStudents(sectionId as string, page, limit, debouncedSearch),
   })
 
   useEffect(() => { 
@@ -168,23 +166,6 @@ const StudentsTable: React.FC<StudentsTableProps> = ({ sectionId }) => {
                         </span>
                       )}
                     </TableCell>
-                    {/* <TableCell>{user.createdBy || '-'}</TableCell> */}
-                    {/* <TableCell>
-                      {user.costPerTest && user.noOfSubmissions ? (
-                        <Tooltip
-                          title={`Total: ${
-                            user.costPerTest * user.noOfSubmissions
-                          }`}
-                          arrow
-                        >
-                          <IconButton size='small'>
-                            <InfoOutlined />
-                          </IconButton>
-                        </Tooltip>
-                      ) : (
-                        '-'
-                      )}
-                    </TableCell> */}
                     <TableCell>
                       <Tooltip title='Remove Student'>
                         <IconButton

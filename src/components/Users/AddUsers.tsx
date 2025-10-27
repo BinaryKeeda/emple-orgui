@@ -25,8 +25,10 @@ import {
   useMediaQuery,
   useTheme,
   IconButton,
-} from "@mui/material";
-import { UploadFile, Download, Delete } from "@mui/icons-material";
+  Snackbar,
+  Alert,
+} from "@mui/material"; // ✅ added Snackbar + Alert
+import { UploadFile, Download, Delete, Close } from "@mui/icons-material";
 import * as XLSX from "xlsx";
 import { BASE_URL } from "../../config/config";
 import { getGroupOwnerShip } from "../../store/selectros/userSelector";
@@ -43,15 +45,24 @@ interface AddUsersProps {
   role: "user" | "campus-admin";
 }
 
-export default function AddUsers({ open, setOpen, role }: AddUsersProps) {
+export default function AddUsers({ open, setOpen }: AddUsersProps) {
   const [usersData, setUsersData] = useState<UserData[]>([]);
   const [response, setResponse] = useState<any>(null);
+  console.log(response);
   const [loadingExcel, setLoadingExcel] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [search, setSearch] = useState<string>("");
+
+  // ✅ New states for API loading + snackbar
+  const [submitting, setSubmitting] = useState(false);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success" as "success" | "error" | "info",
+  });
 
   const admin = useSelector((s: RootState) => s.auth.user);
   const adminId = admin?.user._id;
@@ -78,6 +89,13 @@ export default function AddUsers({ open, setOpen, role }: AddUsersProps) {
       return;
     }
 
+    setSubmitting(true); // ✅ show loader
+    setSnackbar({
+      open: true,
+      message: "Processing invites...",
+      severity: "info",
+    });
+
     try {
       const invites = usersData.map((u) => ({
         email: u.email,
@@ -97,17 +115,28 @@ export default function AddUsers({ open, setOpen, role }: AddUsersProps) {
       setResponse(res.data);
       setUsersData([]);
       setError(null);
+
+      // ✅ Success snackbar
+      setSnackbar({
+        open: true,
+        message: "Invites sent successfully!",
+        severity: "success",
+      });
     } catch (err: any) {
       setResponse({ error: err.response?.data || err.message });
+      setSnackbar({
+        open: true,
+        message: err.response?.data?.message || "Failed to send invites.",
+        severity: "error",
+      });
+    } finally {
+      setSubmitting(false);
     }
   };
 
   // --- Add new row ---
   const handleAddRow = () => {
-    setUsersData((prev) => [
-      ...prev,
-      { email: "", name: "", role: "user" },
-    ]);
+    setUsersData((prev) => [...prev, { email: "", name: "", role: "user" }]);
   };
 
   // --- Excel Upload ---
@@ -187,190 +216,216 @@ export default function AddUsers({ open, setOpen, role }: AddUsersProps) {
   }, [search, usersData]);
 
   return (
-    <Dialog
-      maxWidth="md"
-      fullWidth
-      open={open}
-      onClose={() => setOpen(false)}
-      fullScreen={fullScreen}
-      PaperProps={{ sx: { p: 3, height: fullScreen ? "100%" : "80vh" } }}
-    >
-      <DialogContent className="flex flex-col gap-3" sx={{ overflowY: "auto" }}>
-        <Typography variant="h5" mb={2} align="center">
-          Add {role === "user" ? "Students" : "Campus Admins"}
-        </Typography>
+    <>
+      <Dialog
+        maxWidth="xl"
+        fullWidth
+        open={open}
+        onClose={() => setOpen(false)}
+        fullScreen={fullScreen}
+        PaperProps={{ sx: { p: 3, height: fullScreen ? "100%" : "90vh" } }}
+      >
+        <DialogContent className="flex flex-col gap-3" sx={{ overflowY: "auto" }}>
+          <Typography variant="h5" mb={2} align="center">
+            Add Members
+          </Typography>
+          <IconButton onClick={() => setOpen(false)} sx={{ position: "absolute" , right:5 , top: 3 }}>
+            <Close />
+          </IconButton>
 
-        {/* Search bar */}
-        <TextField
-          size="small"
-          fullWidth
-          placeholder="Search by name or email"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          sx={{ mb: 2 }}
-        />
+          {/* Search bar */}
+          <TextField
+            size="small"
+            fullWidth
+            placeholder="Search by name or email"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            sx={{ mb: 2 }}
+          />
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-          {error && <FormHelperText error>{error}</FormHelperText>}
+          <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+            {error && <FormHelperText error>{error}</FormHelperText>}
 
-          <Box display="flex" gap={1}>
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<UploadFile />}
-              component="label"
-              disabled={loadingExcel}
-            >
-              {loadingExcel ? <CircularProgress size={18} /> : "Upload"}
-              <input
-                type="file"
-                hidden
-                accept=".xlsx,.xls,.csv"
-                onChange={handleExcelUpload}
-              />
-            </Button>
+            <Box display="flex" gap={1}>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<UploadFile />}
+                component="label"
+                disabled={loadingExcel}
+              >
+                {loadingExcel ? <CircularProgress size={18} /> : "Upload"}
+                <input
+                  type="file"
+                  hidden
+                  accept=".xlsx,.xls,.csv"
+                  onChange={handleExcelUpload}
+                />
+              </Button>
 
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<Download />}
-              onClick={handleDownloadSample}
-            >
-              Sample
-            </Button>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<Download />}
+                onClick={handleDownloadSample}
+              >
+                Sample
+              </Button>
 
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={handleAddRow}
-            >
-              Add Row
-            </Button>
-          </Box>
+              <Button variant="outlined" size="small" onClick={handleAddRow}>
+                Add Row
+              </Button>
+            </Box>
 
-          <TableContainer component={Paper} sx={{ mt: 2 }}>
-            <Table size="small">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Email</TableCell>
-                  <TableCell>Name</TableCell>
-                  <TableCell>Role</TableCell>
-                  <TableCell>Action</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredUsers.length > 0 ? (
-                  filteredUsers
-                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                    .map((user, idx) => (
-                      <TableRow key={idx}>
-                        {/* Editable Email */}
-                        <TableCell>
-                          <TextField
-                            size="small"
-                            value={user.email}
-                            onChange={(e) =>
-                              handleEdit(
-                                page * rowsPerPage + idx,
-                                "email",
-                                e.target.value
-                              )
-                            }
-                          />
-                        </TableCell>
-
-                        {/* Editable Name */}
-                        <TableCell>
-                          <TextField
-                            size="small"
-                            value={user.name}
-                            onChange={(e) =>
-                              handleEdit(
-                                page * rowsPerPage + idx,
-                                "name",
-                                e.target.value
-                              )
-                            }
-                          />
-                        </TableCell>
-
-                        {/* Role */}
-                        <TableCell>
-                          <Select
-                            size="small"
-                            value={user.role}
-                            onChange={(e) =>
-                              handleEdit(
-                                page * rowsPerPage + idx,
-                                "role",
-                                e.target.value as "user" | "campus-admin"
-                              )
-                            }
-                          >
-                            <MenuItem value="user">User</MenuItem>
-                            <MenuItem value="campus-admin">Campus Admin</MenuItem>
-                          </Select>
-                        </TableCell>
-
-                        {/* Delete */}
-                        <TableCell>
-                          <IconButton
-                            color="error"
-                            onClick={() =>
-                              handleDelete(page * rowsPerPage + idx)
-                            }
-                          >
-                            <Delete />
-                          </IconButton>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                ) : (
+            <TableContainer component={Paper} sx={{ mt: 2 }}>
+              <Table size="small">
+                <TableHead>
                   <TableRow>
-                    <TableCell colSpan={4} align="center">
-                      No users added yet
-                    </TableCell>
+                    <TableCell>Email</TableCell>
+                    <TableCell>Name</TableCell>
+                    <TableCell>Role</TableCell>
+                    <TableCell>Action</TableCell>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
-            {filteredUsers.length > 0 && (
-              <TablePagination
-                component="div"
-                count={filteredUsers.length}
-                page={page}
-                onPageChange={(_, newPage) => {
-                  setPage(newPage);
-                }}
-                rowsPerPage={rowsPerPage}
-                onRowsPerPageChange={(e) => {
-                  setRowsPerPage(parseInt(e.target.value, 10));
-                  setPage(0);
-                }}
-              />
-            )}
-          </TableContainer>
+                </TableHead>
+                <TableBody>
+                  {filteredUsers.length > 0 ? (
+                    filteredUsers
+                      .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                      .map((user, idx) => (
+                        <TableRow key={idx}>
+                          <TableCell>
+                            <TextField
+                            fullWidth
+                              size="small"
+                              value={user.email}
+                              onChange={(e) =>
+                                handleEdit(
+                                  page * rowsPerPage + idx,
+                                  "email",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <TextField
+                              size="small"
+                              fullWidth
+                              value={user.name}
+                              onChange={(e) =>
+                                handleEdit(
+                                  page * rowsPerPage + idx,
+                                  "name",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Select
+                            fullWidth
+                              size="small"
+                              value={user.role}
+                              onChange={(e) =>
+                                handleEdit(
+                                  page * rowsPerPage + idx,
+                                  "role",
+                                  e.target.value as "user" | "campus-admin"
+                                )
+                              }
+                            >
+                              <MenuItem value="user">User</MenuItem>
+                              <MenuItem value="campus-admin">
+                                Campus Admin
+                              </MenuItem>
+                            </Select>
+                          </TableCell>
+                          <TableCell>
+                            <IconButton
+                              color="error"
+                              onClick={() =>
+                                handleDelete(page * rowsPerPage + idx)
+                              }
+                            >
+                              <Delete />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={4} align="center">
+                        No users added yet
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+              {filteredUsers.length > 0 && (
+                <TablePagination
+                  component="div"
+                  count={filteredUsers.length}
+                  page={page}
+                  onPageChange={(_, newPage) => setPage(newPage)}
+                  rowsPerPage={rowsPerPage}
+                  onRowsPerPageChange={(e) => {
+                    setRowsPerPage(parseInt(e.target.value, 10));
+                    setPage(0);
+                  }}
+                />
+              )}
+            </TableContainer>
 
-          <Button type="submit" variant="contained" size="small" fullWidth>
-            Send Invites
-          </Button>
-        </form>
+            <Button
+              type="submit"
+              variant="contained"
+              fullWidth
+              disabled={submitting} // ✅ prevent multiple clicks
+            >
+              {submitting ? (
+                <>
+                  <CircularProgress size={18} sx={{ mr: 1 }} />
+                  Processing...
+                </>
+              ) : (
+                "Send Invites"
+              )}
+            </Button>
+          </form>
 
-        {response && (
-          <pre
-            style={{
-              marginTop: 12,
-              padding: 10,
-              background: "#f5f5f5",
-              borderRadius: 6,
-              maxHeight: 150,
-              overflow: "auto",
-            }}
-          >
-            {JSON.stringify(response, null, 2)}
-          </pre>
-        )}
-      </DialogContent>
-    </Dialog>
+          {/* {response && (
+            <pre
+              style={{
+                marginTop: 12,
+                padding: 10,
+                background: "#f5f5f5",
+                borderRadius: 6,
+                maxHeight: 150,
+                overflow: "auto",
+              }}
+            >
+              {JSON.stringify(response, null, 2)}
+            </pre>
+          )} */}
+        </DialogContent>
+      </Dialog>
+
+      {/* ✅ Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ width: "100%" }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </>
   );
 }

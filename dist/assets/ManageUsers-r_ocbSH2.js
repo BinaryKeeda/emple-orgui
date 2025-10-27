@@ -1,1 +1,0 @@
-import{P as s,j as t}from"./index-BIcbHDZS.js";import{S as o}from"./StudentsTable-B03EamlF.js";import"./useQuery-cla0o0Kh.js";import"./TextField-uuShNIW1.js";import"./Typography-Bwb-8M5c.js";import"./Search-wxjobjig.js";import"./Delete-BeDMGDrI.js";function d(){const{id:r}=s();return t.jsx(t.Fragment,{children:t.jsx(o,{sectionId:r})})}export{d as default};

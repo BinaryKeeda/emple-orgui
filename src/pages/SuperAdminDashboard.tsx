@@ -1,8 +1,4 @@
-import React, {
-  useState,
-  type FormEvent,
-  type ChangeEvent
-} from 'react'
+import React, { useState, type FormEvent, type ChangeEvent } from 'react'
 import axios from 'axios'
 import { useSelector } from 'react-redux'
 import { BASE_URL, LOGO } from '../config/config'
@@ -13,7 +9,7 @@ import {
   Logout,
   CloudUpload,
   Check,
-  Delete
+  Delete,
 } from '@mui/icons-material'
 import {
   Modal,
@@ -22,7 +18,11 @@ import {
   Button,
   Typography,
   Slider,
-  IconButton
+  IconButton,
+  Backdrop,
+  CircularProgress,
+  Skeleton,
+  Box,
 } from '@mui/material'
 import Cropper from 'react-easy-crop'
 import { useLogout } from '../hooks/useLogout'
@@ -58,7 +58,7 @@ const getCroppedImg = async (imageSrc: string, crop: any, zoom: number) => {
     canvas.height
   )
 
-  return new Promise<File>((resolve) => {
+  return new Promise<File>(resolve => {
     canvas.toBlob(blob => {
       if (blob) {
         resolve(new File([blob], 'cropped-logo.png', { type: 'image/png' }))
@@ -107,7 +107,7 @@ const LogoUploader = ({ onSave }: { onSave: (file: File) => void }) => {
               image={imageSrc}
               crop={crop}
               zoom={zoom}
-              aspect={1}   // ✅ Square crop only
+              aspect={1}
               onCropChange={setCrop}
               onZoomChange={setZoom}
             />
@@ -126,7 +126,7 @@ const LogoUploader = ({ onSave }: { onSave: (file: File) => void }) => {
             onClick={handleSave}
             sx={{
               mt: 2,
-              background: 'linear-gradient(90deg, #007BFF 0%, #004A99 100%)'
+              background: 'linear-gradient(90deg, #007BFF 0%, #004A99 100%)',
             }}
           >
             Save Logo
@@ -141,7 +141,7 @@ const LogoUploader = ({ onSave }: { onSave: (file: File) => void }) => {
 const CreateSectionModal = ({
   open,
   onClose,
-  onCreate
+  onCreate,
 }: {
   open: boolean
   onClose: () => void
@@ -182,8 +182,6 @@ const CreateSectionModal = ({
                 className="h-24 w-24 object-contain rounded border p-1 border-gray-300"
               />
             </div>
-
-
           )}
           <Button
             type="submit"
@@ -191,7 +189,7 @@ const CreateSectionModal = ({
             sx={{
               background: 'linear-gradient(90deg, #007BFF 0%, #004A99 100%)',
               color: '#fff',
-              borderRadius: 2
+              borderRadius: 2,
             }}
           >
             Create <Add />
@@ -205,7 +203,7 @@ const CreateSectionModal = ({
 /* --------------------------- Section Card --------------------------- */
 const SectionCard = ({
   section,
-  onDelete
+  onDelete,
 }: {
   section: any
   onDelete: (id: string) => void
@@ -215,7 +213,6 @@ const SectionCard = ({
 
   return (
     <div className="relative flex flex-col rounded-xl bg-white text-gray-700 shadow-md hover:shadow-lg transition-transform hover:scale-[1.02]">
-      {/* Logo */}
       <div className="relative h-40 flex items-center justify-center bg-gradient-to-r rounded-t-xl overflow-hidden">
         {!imgLoaded && section.logo && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-200 animate-pulse">
@@ -236,8 +233,6 @@ const SectionCard = ({
             {section.name[0]}
           </Typography>
         )}
-
-        {/* Delete Button */}
         <Tooltip title="Delete" arrow>
           <IconButton
             size="small"
@@ -248,22 +243,18 @@ const SectionCard = ({
               right: 8,
               color: '#fff',
               background: 'rgba(0,0,0,0.4)',
-              '&:hover': { background: 'rgba(255,0,0,0.6)' }
+              '&:hover': { background: 'rgba(255,0,0,0.6)' },
             }}
           >
             <Delete fontSize="small" />
           </IconButton>
         </Tooltip>
       </div>
-
-      {/* Title */}
       <div className="px-6 pt-4 pb-2 text-center">
         <Typography variant="h6" className="font-semibold">
           {section.name}
         </Typography>
       </div>
-
-      {/* Action */}
       <div className="flex justify-center pb-4">
         <Button
           onClick={() => {
@@ -277,7 +268,7 @@ const SectionCard = ({
             fontSize: 12,
             background: 'linear-gradient(90deg, #007BFF 0%, #004A99 100%)',
             color: '#fff',
-            borderRadius: 2
+            borderRadius: 2,
           }}
         >
           Proceed
@@ -287,55 +278,73 @@ const SectionCard = ({
   )
 }
 
-/* ------------------------------- Dashboard ------------------------------ */
-const Dashboard: React.FC = () => {
+/* ------------------------------- SuperAdminDashboard ------------------------------ */
+const SuperAdminDashboard: React.FC = () => {
   const [message, setMessage] = useState<string>('')
   const [modalOpen, setModalOpen] = useState(false)
-  const logout = useLogout();
-  const user = useSelector((s:RootState) => s.auth.user?.user);
-  const groudId = useSelector(getGroupOwnerShip);
-  const userId = user?.role === "campus-admin" ? user._id : undefined;
-  const { data  , error} = useSections(groudId ?? "", userId);
-  if(error) return <>{JSON.stringify(error)}</>
+  const [loading, setLoading] = useState(false)
+  const logout = useLogout()
+  const user = useSelector((s: RootState) => s.auth.user?.user)
+  const groudId = useSelector(getGroupOwnerShip)
+  const userId = user?.role === 'campus-admin' ? user._id : undefined
+  const { data, error, isLoading } = useSections(groudId ?? '', userId)
+
+  if (error) return <>{JSON.stringify(error)}</>
 
   const handleCreateSection = async (name: string, logoFile?: File) => {
     if (!groudId) return setMessage('No group assigned')
     try {
+      setLoading(true)
       const formData = new FormData()
       formData.append('name', name)
       formData.append('groupId', groudId)
       if (logoFile) formData.append('logo', logoFile)
-
-      await axios.post(
-        BASE_URL + '/api/campus/create/section',
-        formData,
-        {
-          headers: { 'Content-Type': 'multipart/form-data' },
-          withCredentials: true
-        }
-      )
+      await axios.post(BASE_URL + '/api/campus/create/section', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        withCredentials: true,
+      })
       setMessage('Section created successfully!')
       setModalOpen(false)
     } catch (err: any) {
       console.error(err)
       setMessage(err.response?.data?.message || 'Error creating section')
+    } finally {
+      setLoading(false)
     }
   }
 
   const handleDelete = async (id: string) => {
     try {
-      await axios.post(BASE_URL + '/api/campus/delete/section/' + id, {}, {
-        withCredentials: true
-      })
+      setLoading(true)
+      await axios.post(BASE_URL + '/api/campus/delete/section/' + id, {}, { withCredentials: true })
       setMessage('Section deleted successfully!')
     } catch (err: any) {
       console.error(err)
       setMessage(err.response?.data?.message || 'Error deleting section')
+    } finally {
+      setLoading(false)
     }
   }
 
   return (
     <>
+      {/* Global Backdrop Loader */}
+      <Backdrop
+        open={loading}
+        sx={{
+          color: '#fff',
+          zIndex: theme => theme.zIndex.drawer + 1,
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+        }}
+      >
+        <CircularProgress color="inherit" />
+        <Typography variant="body2" sx={{ mt: 1 }}>
+          Please wait... Processing your request
+        </Typography>
+      </Backdrop>
+
       {/* Header */}
       <header className="p-2 border-b border-b-[#e1e1e1] flex gap-3 items-center justify-between px-5">
         <img src={LOGO} className="h-10" alt="Logo" />
@@ -347,7 +356,7 @@ const Dashboard: React.FC = () => {
               fontSize: 10,
               height: 36,
               background: 'linear-gradient(90deg, #007BFF 0%, #004A99 100%)',
-              color: '#fff'
+              color: '#fff',
             }}
           >
             Create New Section <Add />
@@ -355,26 +364,33 @@ const Dashboard: React.FC = () => {
           <Tooltip title="Logout" arrow>
             <IconButton onClick={logout} size="small" sx={{ color: '#f44336' }}>
               <Logout sx={{ cursor: 'pointer' }} />
-
             </IconButton>
           </Tooltip>
         </div>
       </header>
 
-      {/* Main Content */}
+      {/* Message */}
       {message && (
         <Typography color="success.main" className="px-5 mt-2">
           {message}
         </Typography>
       )}
-      {data && data?.data?.length ? (
+
+      {/* 🔥 Section Loading Skeleton */}
+      {isLoading ? (
+        <Box className="grid grid-cols-1 p-5 mt-4 md:grid-cols-3 lg:grid-cols-5 gap-6">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Box key={i} className="rounded-xl shadow-md bg-white p-3">
+              <Skeleton variant="rectangular" height={150} animation="wave" />
+              <Skeleton variant="text" height={30} sx={{ mt: 2 }} />
+              <Skeleton variant="rounded" height={36} width="60%" sx={{ mt: 1 }} />
+            </Box>
+          ))}
+        </Box>
+      ) : data && data?.data?.length ? (
         <div className="grid grid-cols-1 p-5 mt-4 md:grid-cols-3 lg:grid-cols-5 gap-6">
           {data.data.map((section: any) => (
-            <SectionCard
-              key={section._id}
-              section={section}
-              onDelete={handleDelete}
-            />
+            <SectionCard key={section._id} section={section} onDelete={handleDelete} />
           ))}
         </div>
       ) : (
@@ -382,12 +398,9 @@ const Dashboard: React.FC = () => {
           <Typography variant="body1" gutterBottom>
             Admin, no sections have been created yet.
           </Typography>
-          <Typography variant="body2">
-            Click "Create New Section" to get started.
-          </Typography>
+          <Typography variant="body2">Click "Create New Section" to get started.</Typography>
         </div>
       )}
-
 
       {/* Create Section Modal */}
       <CreateSectionModal
@@ -399,4 +412,4 @@ const Dashboard: React.FC = () => {
   )
 }
 
-export default Dashboard
+export default SuperAdminDashboard

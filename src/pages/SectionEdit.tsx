@@ -44,10 +44,11 @@ const SectionPage: React.FC = () => {
   const [quizOpen, setQuizOpen] = useState(false)
   const [testOpen, setTestOpen] = useState(false)
   const { id } = useParams<string>()
-  const groupId = useSelector(getGroupOwnerShip) ?? "";
+  const groupId = useSelector(getGroupOwnerShip) ?? ""
 
-  const [open, setOpen] = useState<boolean>(false)
-  const [role, setRole] = useState<'campus-admin' | 'user'>('user')
+  // ✅ Single modal for adding users/admins
+  const [openAddUserModal, setOpenAddUserModal] = useState(false)
+  const [selectedRole, setSelectedRole] = useState<'campus-admin' | 'user'>('user')
 
   const {
     data: insights,
@@ -116,27 +117,45 @@ const SectionPage: React.FC = () => {
 
   return (
     <div className='p-6 space-y-8'>
-      {/* Add Users Modal */}
-      <AddUsers role={role} open={open} setOpen={() => setOpen(false)} />
+      {/* ✅ Combined Add User/Admin Modal */}
+      <AddUsers
+        role={selectedRole}
+        open={openAddUserModal}
+        setOpen={() => setOpenAddUserModal(false)}
+      />
 
       {/* Action Buttons */}
       <div className='flex flex-wrap gap-4'>
         <ActionButton label='Add Quiz' onClick={() => setQuizOpen(true)} />
         <ActionButton label='Add Test' onClick={() => setTestOpen(true)} />
-        <ActionButton
-          label='Add Students'
-          onClick={() => {
-            setRole('user')
-            setOpen(true)
-          }}
-        />
-        <ActionButton
-          label='Add Admin'
-          onClick={() => {
-            setRole('campus-admin')
-            setOpen(true)
-          }}
-        />
+
+        {/* ✅ Combined button with dropdown */}
+        <div className='relative group'>
+          <ActionButton
+            label='Add Members'
+            onClick={() => setOpenAddUserModal(true)}
+          />
+          <div className='absolute hidden group-hover:flex flex-col bg-white border border-gray-200 rounded-lg shadow-lg top-full mt-2 right-0 z-10'>
+            <button
+              className='px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left'
+              onClick={() => {
+                setSelectedRole('user')
+                setOpenAddUserModal(true)
+              }}
+            >
+              Add Students
+            </button>
+            <button
+              className='px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left'
+              onClick={() => {
+                setSelectedRole('campus-admin')
+                setOpenAddUserModal(true)
+              }}
+            >
+              Add Admins
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Loading */}
@@ -199,7 +218,7 @@ const SectionPage: React.FC = () => {
       />
 
       {/* Manage Users */}
-      <StudentsTable sectionId={id as string} />
+      <StudentsTable />
     </div>
   )
 }

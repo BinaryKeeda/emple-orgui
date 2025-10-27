@@ -1,10 +1,10 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import axios from 'axios'
 import { useSelector } from 'react-redux'
 import { BASE_URL, LOGO } from '../config/config'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, Logout, Delete } from '@mui/icons-material'
-import { Tooltip, Button, Typography, IconButton } from '@mui/material'
+import { Tooltip, Button, Typography, IconButton, Skeleton, Box } from '@mui/material'
 import { useLogout } from '../hooks/useLogout'
 import type { RootState } from '../store/store'
 
@@ -93,11 +93,27 @@ const SectionCard = ({
   )
 }
 
+/* --------------------------- SectionCard Skeleton --------------------------- */
+const SectionSkeleton = () => (
+  <Box className="flex flex-col rounded-xl bg-white shadow-md p-4">
+    <Skeleton variant="rectangular" height={150} animation="wave" />
+    <Skeleton variant="text" width="80%" sx={{ mt: 2, mx: 'auto' }} />
+    <Skeleton variant="rectangular" width="50%" height={36} sx={{ mt: 2, mx: 'auto', borderRadius: 1 }} />
+  </Box>
+)
+
 /* ------------------------------- Dashboard ------------------------------ */
 const Dashboard: React.FC = () => {
   const [message, setMessage] = useState<string>('')
+  const [loading, setLoading] = useState<boolean>(true)
   const logout = useLogout()
   const user = useSelector((s: RootState) => s.auth.user)
+
+  useEffect(() => {
+    // Simulate data loading delay (replace this with real fetch logic if needed)
+    const timer = setTimeout(() => setLoading(false), 1200)
+    return () => clearTimeout(timer)
+  }, [])
 
   const handleDelete = async (ownershipId: string) => {
     try {
@@ -130,13 +146,20 @@ const Dashboard: React.FC = () => {
         </Typography>
       )}
 
-      {Array.isArray(user?.ownership) && user.ownership.length ? (
+      {/* Loading Skeleton */}
+      {loading ? (
+        <div className="grid grid-cols-1 p-5 mt-4 md:grid-cols-3 lg:grid-cols-5 gap-6">
+          {[...Array(5)].map((_, i) => (
+            <SectionSkeleton key={i} />
+          ))}
+        </div>
+      ) : Array.isArray(user?.ownership) && user.ownership.length ? (
         <div className="grid grid-cols-1 p-5 mt-4 md:grid-cols-3 lg:grid-cols-5 gap-6">
           {user.ownership.map((o: any) => (
             <SectionCard
               key={o.section._id}
-              section={o.section}             // Pass actual section details
-              onDelete={() => handleDelete(o._id)} // Delete using ownershipId
+              section={o.section}
+              onDelete={() => handleDelete(o._id)}
             />
           ))}
         </div>

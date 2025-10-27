@@ -1,12 +1,11 @@
 // import { useState } from 'react'
 // import AddUsers from '../components/Users/AddUsers'
 import StudentsTable from '../components/Users/StudentsTable'
-import { useParams } from 'react-router-dom'
 
 export default function ManageUsers () {
   // const [open, setOpen] = useState<boolean>(false)
   // const [role, setRole] = useState<'campus-admin' | 'user'>('user')
-  const { id } = useParams<string>()
+  // const { id } = useParams<string>()
   return (
     <>
       {/* <div
@@ -67,7 +66,7 @@ export default function ManageUsers () {
           setOpen(false)
         }}
       /> */}
-      <StudentsTable sectionId={id as string} />
+      <StudentsTable  />
     </>
   )
 }
