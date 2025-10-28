@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
   Logout,
-  Delete,
   Notifications as NotificationsIcon,
 } from "@mui/icons-material";
 import {
@@ -31,7 +30,7 @@ import NotificationsDrawer from "../Layout/NotificationDrawer";
 /* --------------------------- Section Card --------------------------- */
 const SectionCard = ({
   section,
-  onDelete,
+  // onDelete,
 }: {
   section: { _id: string; name: string; logo: string };
   onDelete: () => void;
@@ -64,22 +63,7 @@ const SectionCard = ({
         )}
 
         {/* Delete Button */}
-        <Tooltip title="Delete" arrow>
-          <IconButton
-            size="small"
-            onClick={onDelete}
-            sx={{
-              position: "absolute",
-              top: 8,
-              right: 8,
-              color: "#fff",
-              background: "rgba(0,0,0,0.4)",
-              "&:hover": { background: "rgba(255,0,0,0.6)" },
-            }}
-          >
-            <Delete fontSize="small" />
-          </IconButton>
-        </Tooltip>
+        
       </div>
 
       {/* Title */}
