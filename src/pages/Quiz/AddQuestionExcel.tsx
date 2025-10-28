@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useDropzone } from 'react-dropzone';
 import * as XLSX from 'xlsx';
 import axios from 'axios';
+import { BASE_URL } from '../../config/config';
 
 // ✅ Define the shape of a question
 interface BaseQuestion {
@@ -38,7 +39,6 @@ interface AddQuestionExcelProps {
 }
 
 // ✅ Environment-safe base URL (replace if you have a config file)
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
 
 export default function AddQuestionExcel({
   onSuccess,
