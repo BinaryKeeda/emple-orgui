@@ -127,7 +127,7 @@ const SectionPage: React.FC = () => {
       {/* Action Buttons */}
       <div className='flex flex-wrap gap-4'>
         <ActionButton label='Add Quiz' onClick={() => setQuizOpen(true)} />
-        <ActionButton label='Add Test' onClick={() => setTestOpen(true)} />
+        {/* <ActionButton label='Add Test' onClick={() => setTestOpen(true)} /> */}
 
         {/* ✅ Combined button with dropdown */}
         <div className='relative group'>

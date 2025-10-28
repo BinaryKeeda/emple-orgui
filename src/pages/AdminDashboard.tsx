@@ -123,7 +123,6 @@ const SectionSkeleton = () => (
 
 /* ------------------------------- Dashboard ------------------------------ */
 const Dashboard: React.FC = () => {
-  const [message, setMessage] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(true);
   const [notificationOpen, setNotificationOpen] = useState<boolean>(false);
 
@@ -142,10 +141,8 @@ const Dashboard: React.FC = () => {
         {},
         { withCredentials: true }
       );
-      setMessage("Section deleted successfully!");
     } catch (err: any) {
       console.error(err);
-      setMessage(err.response?.data?.message || "Error deleting section");
     }
   };
 
@@ -186,12 +183,6 @@ const Dashboard: React.FC = () => {
         />
       )}
 
-      {/* Message */}
-      {message && (
-        <Typography color="success.main" className="px-5 mt-2">
-          {message}
-        </Typography>
-      )}
 
       {/* Main Section Grid */}
       {loading ? (

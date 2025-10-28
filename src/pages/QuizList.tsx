@@ -14,10 +14,18 @@ import {
   TableCell,
   TableContainer,
   Paper,
-  TablePagination
+  TablePagination,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Button,
+  Snackbar,
+  Alert,
 } from '@mui/material'
-import { Search, Visibility, Edit } from '@mui/icons-material'
-import { useQuery } from '@tanstack/react-query'
+import { Search, Visibility, Edit, Delete } from '@mui/icons-material'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 interface Quiz {
   _id: string
@@ -48,12 +56,11 @@ interface PaginatedQuizzes {
   quizzes: Quiz[]
 }
 
-// Fetch quizzes
 const fetchQuizzes = async ({
   sectionId,
   page,
   limit,
-  search
+  search,
 }: {
   sectionId: string
   page: number
@@ -69,16 +76,27 @@ const fetchQuizzes = async ({
 
 const QuizEdit: React.FC = () => {
   const { id } = useParams<{ id: string }>()
-  const [page, setPage] = useState(0) // MUI TablePagination is 0-based
+  const [page, setPage] = useState(0)
   const [rowsPerPage, setRowsPerPage] = useState(10)
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState(search)
+
+  const [openDialog, setOpenDialog] = useState(false)
+  const [quizToDelete, setQuizToDelete] = useState<Quiz | null>(null)
+
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success' as 'success' | 'error',
+  })
+
+  const queryClient = useQueryClient()
 
   // Debounce search
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearch(search)
-      setPage(0) // reset page
+      setPage(0)
     }, 400)
     return () => clearTimeout(handler)
   }, [search])
@@ -88,44 +106,74 @@ const QuizEdit: React.FC = () => {
     queryFn: () =>
       fetchQuizzes({
         sectionId: id as string,
-        page: page + 1, // backend uses 1-based
+        page: page + 1,
         limit: rowsPerPage,
-        search: debouncedSearch
+        search: debouncedSearch,
       }),
     enabled: !!id,
-    staleTime: 1000 * 60 * 5
+    staleTime: 1000 * 60 * 5,
   })
 
   const quizzes = data?.quizzes ?? []
   const totalQuizzes = data?.totalQuizzes ?? 0
 
   const handleChangePage = (_: any, newPage: number) => setPage(newPage)
-  const handleChangeRowsPerPage = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
     setRowsPerPage(parseInt(event.target.value, 10))
     setPage(0)
   }
 
+  const handleDeleteConfirm = (quiz: Quiz) => {
+    setQuizToDelete(quiz)
+    setOpenDialog(true)
+  }
+
+  const handleDelete = async () => {
+    if (!quizToDelete) return
+
+    try {
+      await axios.delete(`${BASE_URL}/api/campus/sections/quiz/delete/${quizToDelete._id}`, {
+        withCredentials: true,
+      })
+
+      setSnackbar({
+        open: true,
+        message: 'Quiz deleted successfully',
+        severity: 'success',
+      })
+
+      queryClient.invalidateQueries({
+        queryKey: ['quizzes', id, page, rowsPerPage, debouncedSearch],
+      })
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: 'Failed to delete quiz',
+        severity: 'error',
+      })
+    } finally {
+      setOpenDialog(false)
+      setQuizToDelete(null)
+    }
+  }
+
   return (
     <Paper sx={{ p: 3, borderRadius: 3, overflow: 'hidden' }}>
-      {/* Search */}
       <TextField
         size='small'
         placeholder='Search quizzes...'
         value={search}
-        onChange={e => setSearch(e.target.value)}
+        onChange={(e) => setSearch(e.target.value)}
         sx={{ mb: 2, width: '100%', maxWidth: 400 }}
         InputProps={{
           startAdornment: (
             <InputAdornment position='start'>
               <Search />
             </InputAdornment>
-          )
+          ),
         }}
       />
 
-      {/* Table */}
       <TableContainer>
         <Table>
           <TableHead>
@@ -138,42 +186,40 @@ const QuizEdit: React.FC = () => {
               <TableCell>Created By</TableCell>
               <TableCell>Cost</TableCell>
               <TableCell align='center'>Actions</TableCell>
+              <TableCell align='center'>Delete</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={8} align='center'>
+                <TableCell colSpan={9} align='center'>
                   Loading...
                 </TableCell>
               </TableRow>
             ) : quizzes.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} align='center'>
+                <TableCell colSpan={9} align='center'>
                   No quizzes found.
                 </TableCell>
               </TableRow>
             ) : (
-              quizzes.map(quiz => (
+              quizzes.map((quiz) => (
                 <TableRow key={quiz._id} hover>
                   <TableCell>{quiz.title}</TableCell>
                   <TableCell>{quiz.category}</TableCell>
                   <TableCell>{quiz.difficulty}</TableCell>
                   <TableCell>{quiz.duration} min</TableCell>
                   <TableCell>{quiz.marks}</TableCell>
-                  <TableCell>{quiz.creator.name || '-'}</TableCell>
+                  <TableCell>{quiz.creator?.name || '-'}</TableCell>
                   <TableCell>
-                      <Tooltip
-                        title={`Total: ${
-                          quiz.costPerAttempt * quiz.noOfSubmissions
-                        }`}
-                        arrow
-                      >
-                        <span className='cursor-pointer'>
-                          {/* {quiz.costPerAttempt} x {quiz.noOfSubmissions} */}
-                          { (quiz.costPerAttempt || 0) * (quiz.noOfSubmissions || 0)}
-                        </span>
-                      </Tooltip>
+                    <Tooltip
+                      title={`Total: ${quiz.costPerAttempt * quiz.noOfSubmissions}`}
+                      arrow
+                    >
+                      <span>
+                        {(quiz.costPerAttempt || 0) * (quiz.noOfSubmissions || 0)}
+                      </span>
+                    </Tooltip>
                   </TableCell>
                   <TableCell align='center'>
                     <Tooltip title='Preview Quiz'>
@@ -197,6 +243,17 @@ const QuizEdit: React.FC = () => {
                       </IconButton>
                     </Tooltip>
                   </TableCell>
+                  <TableCell align='center'>
+                    <Tooltip title='Delete Quiz'>
+                      <IconButton
+                        color='error'
+                        size='small'
+                        onClick={() => handleDeleteConfirm(quiz)}
+                      >
+                        <Delete fontSize='small' />
+                      </IconButton>
+                    </Tooltip>
+                  </TableCell>
                 </TableRow>
               ))
             )}
@@ -204,7 +261,6 @@ const QuizEdit: React.FC = () => {
         </Table>
       </TableContainer>
 
-      {/* Pagination */}
       <TablePagination
         component='div'
         count={totalQuizzes}
@@ -214,6 +270,41 @@ const QuizEdit: React.FC = () => {
         onRowsPerPageChange={handleChangeRowsPerPage}
         rowsPerPageOptions={[5, 10, 20, 50]}
       />
+
+      {/* Confirm Delete Dialog */}
+      <Dialog open={openDialog} onClose={() => setOpenDialog(false)}>
+        <DialogTitle>Confirm Deletion</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete quiz "{quizToDelete?.title}"? This action cannot
+            be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDialog(false)} color='inherit'>
+            Cancel
+          </Button>
+          <Button onClick={handleDelete} color='error' variant='contained'>
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Paper>
   )
 }
