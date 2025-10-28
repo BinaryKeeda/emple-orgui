@@ -9,10 +9,10 @@ interface Submission {
   attemptNo: number;
   score: number;
   submittedAt: string;
-  userId: {
-    name: string;
-    email: string;
-  };
+  name: string;
+  email: string;
+  updatedAt: string;
+
 }
 
 interface Defaulter {
@@ -22,11 +22,9 @@ interface Defaulter {
 }
 
 interface ApiResponse {
-  submissions: {
-    list: Submission[];
-    total: number;
-    totalPages: number;
-  };
+  list: Submission[];
+  total: number;
+  totalPages: number;
   defaulters: {
     list: Defaulter[];
     total: number;
@@ -57,7 +55,6 @@ const fetchQuizPreview = async ({
 const QuizPreview: React.FC = () => {
   const { slug, id } = useParams<{ slug: string; id: string }>();
   const [page, setPage] = useState(1);
-  const [showDefaulters, setShowDefaulters] = useState(false); // <-- new state
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["quizPreview", slug, id, page],
@@ -85,9 +82,8 @@ const QuizPreview: React.FC = () => {
       </div>
     );
 
-  const submissions = data?.submissions?.list ?? [];
-  const defaulters = data?.defaulters?.list ?? [];
-  const totalPages = data?.submissions?.totalPages ?? 1;
+  const submissions = data?.list ?? [];
+  const totalPages = data?.totalPages ?? 1;
 
   return (
     <div className="p-6 flex flex-col gap-8">
@@ -100,7 +96,7 @@ const QuizPreview: React.FC = () => {
               <tr>
                 <th className="px-4 py-3 border-b border-b-gray-200">Name</th>
                 <th className="px-4 py-3 border-b border-b-gray-200">Email</th>
-                <th className="px-4 py-3 border-b border-b-gray-200">Attempt</th>
+                {/* <th className="px-4 py-3 border-b border-b-gray-200">Attempt</th> */}
                 <th className="px-4 py-3 border-b border-b-gray-200">Score</th>
                 <th className="px-4 py-3 border-b border-b-gray-200">Submitted At</th>
               </tr>
@@ -109,15 +105,15 @@ const QuizPreview: React.FC = () => {
               {submissions.map((s) => (
                 <tr key={s._id} className="hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-4 border-b border-b-gray-50">
-                    {s.userId?.name}
+                    {s.name}
                   </td>
                   <td className="px-4 py-4 border-b border-b-gray-50">
-                    {s.userId?.email}
+                    {s.email}
                   </td>
-                  <td className="px-4 py-4 border-b border-b-gray-50">{s.attemptNo}</td>
+                  {/* <td className="px-4 py-4 border-b border-b-gray-50">{s.attemptNo}</td> */}
                   <td className="px-4 py-4 border-b border-b-gray-50">{s.score}</td>
                   <td className="px-4 py-4 border-b border-b-gray-50">
-                    {new Date(s.submittedAt).toLocaleString()}
+                    {new Date(s.updatedAt).toLocaleString()}
                   </td>
                 </tr>
               ))}
@@ -156,45 +152,7 @@ const QuizPreview: React.FC = () => {
         </div>
       </div>
 
-      {/* Show Defaulters Button */}
-      <button
-        onClick={() => setShowDefaulters((prev) => !prev)}
-        className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-      >
-        {showDefaulters ? "Hide Defaulters" : "Show Defaulters"}
-      </button>
 
-      {/* Defaulters Table */}
-      {showDefaulters && (
-        <div>
-          <h2 className="text-lg font-semibold mb-3">Defaulters</h2>
-          <div className="overflow-x-auto bg-white rounded-xl shadow-md">
-            <table className="w-full text-sm text-left border border-gray-200">
-              <thead className="bg-gray-50 text-gray-700 text-sm">
-                <tr>
-                  <th className="px-4 py-3 border-b border-b-gray-200">Name</th>
-                  <th className="px-4 py-3 border-b border-b-gray-200">Email</th>
-                </tr>
-              </thead>
-              <tbody>
-                {defaulters.map((d) => (
-                  <tr key={d._id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-4 border-b border-b-gray-50">{d.name}</td>
-                    <td className="px-4 py-4 border-b border-b-gray-50">{d.email}</td>
-                  </tr>
-                ))}
-                {defaulters.length === 0 && (
-                  <tr>
-                    <td colSpan={2} className="text-center py-6 text-gray-500">
-                      No defaulters found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -29,6 +29,7 @@ import { useLogout } from '../hooks/useLogout'
 import { getGroupOwnerShip } from '../store/selectros/userSelector'
 import useSections from './hooks/useSections'
 import type { RootState } from '../store/store'
+import { useSnackbar } from 'notistack'
 
 /* ----------------------------- Helper function ---------------------------- */
 const getCroppedImg = async (imageSrc: string, crop: any, zoom: number) => {
@@ -287,7 +288,7 @@ const SuperAdminDashboard: React.FC = () => {
   const user = useSelector((s: RootState) => s.auth.user?.user)
   const groudId = useSelector(getGroupOwnerShip)
   const userId = user?.role === 'campus-admin' ? user._id : undefined
-
+  const { enqueueSnackbar } = useSnackbar();
   // 👇 Include refetch here
   const { data, error, isLoading, refetch } = useSections(groudId ?? '', userId)
 
@@ -307,7 +308,11 @@ const SuperAdminDashboard: React.FC = () => {
         withCredentials: true,
       })
 
-      setMessage('Section created successfully!')
+      // setMessage('Section created successfully!')
+
+      enqueueSnackbar(
+        'Data saved successfully!', { variant: 'success' }
+      )
       setModalOpen(false)
       await refetch() // 🔥 refresh after create
     } catch (err: any) {
@@ -324,7 +329,10 @@ const SuperAdminDashboard: React.FC = () => {
       await axios.post(BASE_URL + '/api/campus/delete/section/' + id, {}, {
         withCredentials: true,
       })
-      setMessage('Section deleted successfully!')
+      // setMessage('Section deleted successfully!')
+           enqueueSnackbar(
+        'Data saved successfully!', { variant: 'success' }
+      )
       await refetch() // 🔥 refresh after delete
     } catch (err: any) {
       console.error(err)

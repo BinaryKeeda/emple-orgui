@@ -178,11 +178,11 @@ const Dashboard: React.FC = () => {
       </header>
 
       {/* Notifications Drawer */}
-      {user?.user._id && (
+      {user?.user?._id && (
         <NotificationsDrawer
           notificationOpen={notificationOpen}
           setNotificationOpen={setNotificationOpen}
-          userId={user.user._id}
+          userId={user.user?._id}
         />
       )}
 
@@ -204,7 +204,7 @@ const Dashboard: React.FC = () => {
         <div className="grid grid-cols-1 p-5 mt-4 md:grid-cols-3 lg:grid-cols-5 gap-6">
           {user.ownership.map((o: any) => (
             <SectionCard
-              key={o.section._id}
+              key={o.section?._id}
               section={o.section}
               onDelete={() => handleDelete(o._id)}
             />

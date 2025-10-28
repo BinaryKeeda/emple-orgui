@@ -13,20 +13,23 @@ import {
   TableContainer,
   Paper,
   Typography,
-  InputAdornment
+  InputAdornment,
+  MenuItem,
+  FormControl,
+  Select,
+  Box
 } from '@mui/material'
 import { Delete, Search } from '@mui/icons-material'
 import { useQuery } from '@tanstack/react-query'
 import { useParams } from 'react-router-dom'
 
 // -------------------- User Interface --------------------
-
 interface User {
   _id: string
   name: string
   email: string
   role: string
-  status: 'member' | 'pending'
+  status: 'member' | 'pending' | 'admin'
   createdBy?: string
   costPerTest?: number
   noOfSubmissions?: number
@@ -37,93 +40,104 @@ const fetchStudents = async (
   sectionId: string,
   page: number,
   limit: number,
-  search: string
+  search: string,
+  role: string,
+  status: string
 ) => {
   const res = await axios.get(
-    `${BASE_URL}/api/campus/students/${sectionId}/?page=${page}&limit=${limit}&search=${search}`,
+    `${BASE_URL}/api/campus/students/${sectionId}?page=${page}&limit=${limit}&search=${search}&role=${role}&status=${status}`,
     { withCredentials: true }
   )
-  console.log(res.data);
   return res.data
 }
 
 // -------------------- StudentsTable --------------------
-const StudentsTable: React.FC<{}> = ({}) => {
+const StudentsTable: React.FC = () => {
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState(search)
   const [page, setPage] = useState(1)
+  // const [role, setRole] = useState('all')
+  const [status, setStatus] = useState('all')
   const limit = 10
-  const groupId = "";
-  const {id:sectionId} = useParams<string>();
+  const { id: sectionId } = useParams<{ id: string }>()
 
-  // useEffect(() => { 
-  //   console.log("Section ID changed:", sectionId);
-  //   setPage(1);
-  // }, [sectionId]);
-
-  // -------------------- Debounce search input --------------------
+  // -------------------- Debounce Search --------------------
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearch(search)
-      setPage(1) // reset page on search
-    }, 400) // 400ms debounce
+      setPage(1)
+    }, 400)
     return () => clearTimeout(handler)
   }, [search])
 
   // -------------------- React Query --------------------
   const { data, isLoading, refetch } = useQuery({
-    queryKey: ['students', sectionId, groupId, page, debouncedSearch],
+    queryKey: ['students', sectionId, page, debouncedSearch, status],
     queryFn: () =>
-      fetchStudents(sectionId as string, page, limit, debouncedSearch),
+      fetchStudents(sectionId as string, page, limit, debouncedSearch, "all", status),
   })
 
-  useEffect(() => { 
-    console.log("Group ID changed:", groupId);
-    console.log(data);
-  },[isLoading]);
   const handleRemove = async (userId: string) => {
     try {
-      await axios.delete(
-        `${BASE_URL}/api/campus/students/${sectionId}/${userId}`,
-        { withCredentials: true }
-      )
+      await axios.delete(`${BASE_URL}/api/campus/students/${sectionId}/${userId}`, {
+        withCredentials: true,
+      })
       refetch()
     } catch (err) {
       console.error('Failed to remove student', err)
     }
   }
 
-  // if (isLoading) return <div className="p-5">Loading...</div>;
-
   const students: User[] = data?.data || []
   const total: number = data?.total || 0
 
   return (
     <div className='space-y-4'>
-      {/* Search */}
-      <TextField
-        value={search}
-        onChange={e => setSearch(e.target.value)}
-        size='small'
-        label='Search by name or email'
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position='start'>
-              <IconButton size='small' edge='start'>
+      {/* 🔍 Search + Filters */}
+      <Box display='flex' flexWrap='wrap' gap={2} alignItems='center'>
+        {/* Search */}
+        <TextField
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          size='small'
+          label='Search by name or email'
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position='start'>
                 <Search />
-              </IconButton>
-            </InputAdornment>
-          )
-        }}
-        sx={{ maxWidth: 320 }}
-      />
+              </InputAdornment>
+            ),
+          }}
+          sx={{ maxWidth: 280 }}
+        />
 
-      {/* Table */}
+        {/* Role Filter */}
+        {/* <FormControl size='small' sx={{ minWidth: 160 }}>
+          <Select value={role} onChange={(e) => setRole(e.target.value)}>
+            <MenuItem value='all'>All Roles</MenuItem>
+            <MenuItem value='user'>Members</MenuItem>
+            <MenuItem value='admin'>Admins</MenuItem>
+            <MenuItem value='invitee'>Invitees</MenuItem>
+          </Select>
+        </FormControl> */}
+
+        {/* Status Filter */}
+        <FormControl size='small' sx={{ minWidth: 160 }}>
+          <Select value={status} onChange={(e) => setStatus(e.target.value)}>
+            <MenuItem value='all'>All Statuses</MenuItem>
+            <MenuItem value='member'>Member</MenuItem>
+            <MenuItem value='pending'>Pending</MenuItem>
+            <MenuItem value='admin'>Admin</MenuItem>
+          </Select>
+        </FormControl>
+      </Box>
+
+      {/* 🧾 Table */}
       {isLoading ? (
-        <></>
+        <Typography>Loading...</Typography>
       ) : (
         <>
-          <TableContainer component={Paper} className='shadow mt-10 rounded-lg'>
+          <TableContainer component={Paper} className='shadow mt-6 rounded-lg'>
             <Table>
               <TableHead className='bg-orange-50'>
                 <TableRow>
@@ -131,8 +145,6 @@ const StudentsTable: React.FC<{}> = ({}) => {
                   <TableCell>Email</TableCell>
                   <TableCell>Role</TableCell>
                   <TableCell>Status</TableCell>
-                  {/* <TableCell>Created By</TableCell> */}
-                  {/* <TableCell>Cost</TableCell> */}
                   <TableCell>Actions</TableCell>
                 </TableRow>
               </TableHead>
@@ -140,18 +152,12 @@ const StudentsTable: React.FC<{}> = ({}) => {
                 {students.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={7} align='center'>
-                      <Typography color='textSecondary'>
-                        No students found
-                      </Typography>
+                      <Typography color='textSecondary'>No students found</Typography>
                     </TableCell>
                   </TableRow>
                 )}
-                {students.map(user => (
-                  <TableRow
-                    key={user._id}
-                    hover
-                    className='transition duration-150 ease-in-out'
-                  >
+                {students.map((user) => (
+                  <TableRow key={user._id} hover>
                     <TableCell>{user.name}</TableCell>
                     <TableCell>{user.email}</TableCell>
                     <TableCell>{user.role}</TableCell>
@@ -159,6 +165,10 @@ const StudentsTable: React.FC<{}> = ({}) => {
                       {user.status === 'member' ? (
                         <span className='px-2 py-1 text-xs font-medium text-green-700 bg-green-100 rounded'>
                           Member
+                        </span>
+                      ) : user.status === 'admin' ? (
+                        <span className='px-2 py-1 text-xs font-medium text-blue-700 bg-blue-100 rounded'>
+                          Admin
                         </span>
                       ) : (
                         <span className='px-2 py-1 text-xs font-medium text-yellow-700 bg-yellow-100 rounded'>
@@ -183,23 +193,22 @@ const StudentsTable: React.FC<{}> = ({}) => {
             </Table>
           </TableContainer>
 
-          {/* Pagination */}
-          <div className='flex justify-between items-center mt-2'>
+          {/* 🔢 Pagination */}
+          <div className='flex justify-between items-center mt-3'>
             <Typography variant='body2' color='textSecondary'>
-              Showing {(page - 1) * limit + 1} - {Math.min(page * limit, total)}{' '}
-              of {total}
+              Showing {(page - 1) * limit + 1} - {Math.min(page * limit, total)} of {total}
             </Typography>
             <div className='flex gap-2'>
               <button
                 disabled={page === 1}
-                onClick={() => setPage(p => p - 1)}
+                onClick={() => setPage((p) => p - 1)}
                 className='px-3 py-1 border rounded disabled:opacity-50'
               >
                 Prev
               </button>
               <button
                 disabled={page * limit >= total}
-                onClick={() => setPage(p => p + 1)}
+                onClick={() => setPage((p) => p + 1)}
                 className='px-3 py-1 border rounded disabled:opacity-50'
               >
                 Next

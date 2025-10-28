@@ -32,6 +32,7 @@ export default function NotificationsDrawer({
       );
 
       // Optional: trigger a refetch
+      window.location.reload();
       if (refreshInvites) refreshInvites();
     } catch (err) {
       console.error("Error responding to invite:", err);
@@ -65,7 +66,6 @@ export default function NotificationsDrawer({
         {/* Data */}
         {!isLoading && !isError && (
           <ul className="space-y-4 mt-3">
-            {JSON.stringify(data)}
             {data?.length ? (
               data.map((invite: any) => (
                 <div

@@ -27,6 +27,7 @@ const useInvitation = ({
     queryKey: ["inviteData", userId],
     queryFn: () => fetchInviteData(userId),
     // ❗ onSuccess context is not available in useQuery
+    
     // You can use queryClient directly if needed
   });
 };
