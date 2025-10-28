@@ -17,11 +17,18 @@ import {
   MenuItem,
   FormControl,
   Select,
-  Box
+  Box,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Button,
 } from '@mui/material'
 import { Delete, Search } from '@mui/icons-material'
 import { useQuery } from '@tanstack/react-query'
 import { useParams } from 'react-router-dom'
+import { useSnackbar } from 'notistack'
 
 // -------------------- User Interface --------------------
 interface User {
@@ -56,10 +63,12 @@ const StudentsTable: React.FC = () => {
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState(search)
   const [page, setPage] = useState(1)
-  // const [role, setRole] = useState('all')
   const [status, setStatus] = useState('all')
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
   const limit = 10
   const { id: sectionId } = useParams<{ id: string }>()
+  const { enqueueSnackbar } = useSnackbar()
 
   // -------------------- Debounce Search --------------------
   useEffect(() => {
@@ -74,17 +83,30 @@ const StudentsTable: React.FC = () => {
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['students', sectionId, page, debouncedSearch, status],
     queryFn: () =>
-      fetchStudents(sectionId as string, page, limit, debouncedSearch, "all", status),
+      fetchStudents(sectionId as string, page, limit, debouncedSearch, 'all', status),
   })
 
-  const handleRemove = async (userId: string) => {
+  // -------------------- Delete Confirmation --------------------
+  const handleRemoveClick = (userId: string) => {
+    setSelectedUserId(userId)
+    setConfirmOpen(true)
+  }
+
+  const confirmDelete = async () => {
+    if (!selectedUserId) return
+
     try {
-      await axios.delete(`${BASE_URL}/api/campus/students/${sectionId}/${userId}`, {
+      await axios.delete(`${BASE_URL}/api/campus/students/${sectionId}/${selectedUserId}`, {
         withCredentials: true,
       })
+      enqueueSnackbar('Student removed successfully!', { variant: 'success' })
       refetch()
     } catch (err) {
       console.error('Failed to remove student', err)
+      enqueueSnackbar('Failed to remove student!', { variant: 'error' })
+    } finally {
+      setConfirmOpen(false)
+      setSelectedUserId(null)
     }
   }
 
@@ -110,16 +132,6 @@ const StudentsTable: React.FC = () => {
           }}
           sx={{ maxWidth: 280 }}
         />
-
-        {/* Role Filter */}
-        {/* <FormControl size='small' sx={{ minWidth: 160 }}>
-          <Select value={role} onChange={(e) => setRole(e.target.value)}>
-            <MenuItem value='all'>All Roles</MenuItem>
-            <MenuItem value='user'>Members</MenuItem>
-            <MenuItem value='admin'>Admins</MenuItem>
-            <MenuItem value='invitee'>Invitees</MenuItem>
-          </Select>
-        </FormControl> */}
 
         {/* Status Filter */}
         <FormControl size='small' sx={{ minWidth: 160 }}>
@@ -181,7 +193,7 @@ const StudentsTable: React.FC = () => {
                         <IconButton
                           size='small'
                           color='error'
-                          onClick={() => handleRemove(user._id)}
+                          onClick={() => handleRemoveClick(user._id)}
                         >
                           <Delete />
                         </IconButton>
@@ -217,6 +229,22 @@ const StudentsTable: React.FC = () => {
           </div>
         </>
       )}
+
+      {/* ⚠️ Confirm Delete Dialog */}
+      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
+        <DialogTitle>Confirm Removal</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to remove this student? This action cannot be undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmOpen(false)}>Cancel</Button>
+          <Button color='error' onClick={confirmDelete}>
+            Remove
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   )
 }

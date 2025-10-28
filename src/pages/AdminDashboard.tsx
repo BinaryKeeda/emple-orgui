@@ -16,7 +16,13 @@ import {
   Skeleton,
   Box,
   Badge,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
 } from "@mui/material";
+import { useSnackbar } from "notistack";
 import { BASE_URL, LOGO } from "../config/config";
 import { useLogout } from "../hooks/useLogout";
 import type { RootState } from "../store/store";
@@ -125,8 +131,11 @@ const SectionSkeleton = () => (
 const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [notificationOpen, setNotificationOpen] = useState<boolean>(false);
+  const [confirmOpen, setConfirmOpen] = useState<boolean>(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const logout = useLogout();
+  const { enqueueSnackbar } = useSnackbar();
   const user = useSelector((s: RootState) => s.auth.user);
 
   useEffect(() => {
@@ -135,14 +144,33 @@ const Dashboard: React.FC = () => {
   }, []);
 
   const handleDelete = async (ownershipId: string) => {
+    setSelectedId(ownershipId);
+    setConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!selectedId) return;
+
     try {
       await axios.post(
-        BASE_URL + "/api/campus/delete/section/" + ownershipId,
+        `${BASE_URL}/api/campus/delete/section/${selectedId}`,
         {},
         { withCredentials: true }
       );
+      enqueueSnackbar("Section deleted successfully!", {
+        variant: "success",
+        autoHideDuration: 2500,
+      });
+      // Optionally refresh page or remove deleted section from state
     } catch (err: any) {
+      enqueueSnackbar("Failed to delete section!", {
+        variant: "error",
+        autoHideDuration: 2500,
+      });
       console.error(err);
+    } finally {
+      setConfirmOpen(false);
+      setSelectedId(null);
     }
   };
 
@@ -183,7 +211,6 @@ const Dashboard: React.FC = () => {
         />
       )}
 
-
       {/* Main Section Grid */}
       {loading ? (
         <div className="grid grid-cols-1 p-5 mt-4 md:grid-cols-3 lg:grid-cols-5 gap-6">
@@ -211,6 +238,23 @@ const Dashboard: React.FC = () => {
           </Typography>
         </div>
       )}
+
+      {/* Confirm Dialog */}
+      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
+        <DialogTitle>Confirm Deletion</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Are you sure you want to delete this section? This action cannot be
+            undone.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmOpen(false)}>Cancel</Button>
+          <Button color="error" onClick={confirmDelete}>
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 };
