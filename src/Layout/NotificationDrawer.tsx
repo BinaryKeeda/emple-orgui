@@ -97,7 +97,7 @@ export default function NotificationsDrawer({
                       }
                       className="px-2 py-1 text-xs rounded-lg bg-red-500 text-white hover:bg-red-600"
                     >
-                      ❌
+                      X
                     </button>
                   </div>
                 </div>

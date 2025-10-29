@@ -1,4 +1,5 @@
 import {
+  BallotOutlined,
   // BallotOutlined,
   DashboardOutlined,
   QuizOutlined,
@@ -41,12 +42,12 @@ const Drawer: React.FC<DrawerProps> = React.memo(
         path: `/dashboard/section/${sectionId}/quiz`,
         type: 'private',
       },
-      // {
-      //   icon: <BallotOutlined sx={{ fontSize: '20px' }} />,
-      //   label: 'Test',
-      //   path: `/dashboard/section/${sectionId}/test`,
-      //   type: 'private',
-      // },
+      {
+        icon: <BallotOutlined sx={{ fontSize: '20px' }} />,
+        label: 'Test',
+        path: `/dashboard/section/${sectionId}/test`,
+        type: 'private',
+      },
     ]
 
     return (

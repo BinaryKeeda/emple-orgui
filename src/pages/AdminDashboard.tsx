@@ -26,6 +26,7 @@ import { BASE_URL, LOGO } from "../config/config";
 import { useLogout } from "../hooks/useLogout";
 import type { RootState } from "../store/store";
 import NotificationsDrawer from "../Layout/NotificationDrawer";
+import useInvitation from "../hooks/useInviation";
 
 /* --------------------------- Section Card --------------------------- */
 const SectionCard = ({
@@ -63,7 +64,7 @@ const SectionCard = ({
         )}
 
         {/* Delete Button */}
-        
+
       </div>
 
       {/* Title */}
@@ -131,7 +132,7 @@ const Dashboard: React.FC = () => {
     setSelectedId(ownershipId);
     setConfirmOpen(true);
   };
-
+  const { data } = useInvitation({ userId:user?.user._id  as string});
   const confirmDelete = async () => {
     if (!selectedId) return;
 
@@ -170,9 +171,12 @@ const Dashboard: React.FC = () => {
               size="small"
               sx={{ color: "#1976d2" }}
               onClick={() => setNotificationOpen(true)}
+            ><Badge
+              color="error"
+              invisible={data?.length === 0} // hide badge when count is 0
             >
-              <Badge color="error" variant="dot">
                 <NotificationsIcon />
+                <span className="text-xs w-4  rounded-full bg-red-500 text-white h-4 ">{data?.length}</span>
               </Badge>
             </IconButton>
           </Tooltip>

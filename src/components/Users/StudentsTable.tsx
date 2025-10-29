@@ -29,6 +29,8 @@ import { Delete, Search } from '@mui/icons-material'
 import { useQuery } from '@tanstack/react-query'
 import { useParams } from 'react-router-dom'
 import { useSnackbar } from 'notistack'
+import { useSelector } from 'react-redux'
+import type { RootState } from '../../store/store'
 
 // -------------------- User Interface --------------------
 interface User {
@@ -69,7 +71,7 @@ const StudentsTable: React.FC = () => {
   const limit = 10
   const { id: sectionId } = useParams<{ id: string }>()
   const { enqueueSnackbar } = useSnackbar()
-
+  const user = useSelector((s: RootState) => s.auth.user)
   // -------------------- Debounce Search --------------------
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -134,14 +136,17 @@ const StudentsTable: React.FC = () => {
         />
 
         {/* Status Filter */}
-        <FormControl size='small' sx={{ minWidth: 160 }}>
-          <Select value={status} onChange={(e) => setStatus(e.target.value)}>
-            <MenuItem value='all'>All Statuses</MenuItem>
-            <MenuItem value='member'>Member</MenuItem>
-            <MenuItem value='pending'>Pending</MenuItem>
-            <MenuItem value='admin'>Admin</MenuItem>
-          </Select>
-        </FormControl>
+        {user?.user.role == "campus-superadmin" &&
+          <FormControl size='small' sx={{ minWidth: 160 }}>
+            <Select value={status} onChange={(e) => setStatus(e.target.value)}>
+              <MenuItem value='all'>All Statuses</MenuItem>
+              <MenuItem value='member'>Member</MenuItem>
+              <MenuItem value='pending'>Pending</MenuItem>
+              <MenuItem value='admin'>Admin</MenuItem>
+            </Select>
+          </FormControl>
+        }
+
       </Box>
 
       {/* 🧾 Table */}

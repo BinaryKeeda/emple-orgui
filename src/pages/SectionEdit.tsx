@@ -48,7 +48,7 @@ const SectionPage: React.FC = () => {
 
   // ✅ Single modal for adding users/admins
   const [openAddUserModal, setOpenAddUserModal] = useState(false)
-  const [selectedRole, setSelectedRole] = useState<'campus-admin' | 'user'>('user')
+  // const [selectedRole, setSelectedRole] = useState<'campus-admin' | 'user'>('user')
 
   const {
     data: insights,
@@ -119,7 +119,7 @@ const SectionPage: React.FC = () => {
     <div className='p-6 space-y-8'>
       {/* ✅ Combined Add User/Admin Modal */}
       <AddUsers
-        role={selectedRole}
+        // role={selectedRole}
         open={openAddUserModal}
         setOpen={() => setOpenAddUserModal(false)}
       />
@@ -127,7 +127,7 @@ const SectionPage: React.FC = () => {
       {/* Action Buttons */}
       <div className='flex flex-wrap gap-4'>
         <ActionButton label='Add Quiz' onClick={() => setQuizOpen(true)} />
-        {/* <ActionButton label='Add Test' onClick={() => setTestOpen(true)} /> */}
+        <ActionButton label='Add Test' onClick={() => setTestOpen(true)} />
 
         {/* ✅ Combined button with dropdown */}
         <div className='relative group'>
@@ -135,26 +135,6 @@ const SectionPage: React.FC = () => {
             label='Add Members'
             onClick={() => setOpenAddUserModal(true)}
           />
-          <div className='absolute hidden group-hover:flex flex-col bg-white border border-gray-200 rounded-lg shadow-lg top-full mt-2 right-0 z-10'>
-            <button
-              className='px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left'
-              onClick={() => {
-                setSelectedRole('user')
-                setOpenAddUserModal(true)
-              }}
-            >
-              Add Students
-            </button>
-            <button
-              className='px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 text-left'
-              onClick={() => {
-                setSelectedRole('campus-admin')
-                setOpenAddUserModal(true)
-              }}
-            >
-              Add Admins
-            </button>
-          </div>
         </div>
       </div>
 

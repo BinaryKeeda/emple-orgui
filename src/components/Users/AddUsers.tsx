@@ -25,13 +25,12 @@ import {
   useMediaQuery,
   useTheme,
   IconButton,
-  Snackbar,
-  Alert,
 } from "@mui/material"; // ✅ added Snackbar + Alert
 import { UploadFile, Download, Delete, Close } from "@mui/icons-material";
 import * as XLSX from "xlsx";
 import { BASE_URL } from "../../config/config";
 import { getGroupOwnerShip } from "../../store/selectros/userSelector";
+import { useSnackbar } from "notistack";
 
 interface UserData {
   email: string;
@@ -42,7 +41,6 @@ interface UserData {
 interface AddUsersProps {
   open: boolean;
   setOpen: (open: boolean) => void;
-  role: "user" | "campus-admin";
 }
 
 export default function AddUsers({ open, setOpen }: AddUsersProps) {
@@ -58,11 +56,7 @@ export default function AddUsers({ open, setOpen }: AddUsersProps) {
 
   // ✅ New states for API loading + snackbar
   const [submitting, setSubmitting] = useState(false);
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "success" as "success" | "error" | "info",
-  });
+
 
   const admin = useSelector((s: RootState) => s.auth.user);
   const adminId = admin?.user._id;
@@ -70,7 +64,7 @@ export default function AddUsers({ open, setOpen }: AddUsersProps) {
   const groupId = useSelector(getGroupOwnerShip);
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
+  const { enqueueSnackbar } = useSnackbar()
   const theme = useTheme();
   const fullScreen = useMediaQuery(theme.breakpoints.down("sm"));
 
@@ -90,11 +84,14 @@ export default function AddUsers({ open, setOpen }: AddUsersProps) {
     }
 
     setSubmitting(true); // ✅ show loader
-    setSnackbar({
-      open: true,
-      message: "Processing invites...",
-      severity: "info",
-    });
+    // setSnackbar({
+    //   open: true,
+    //   message: "Processing invites...",
+    //   severity: "info",
+    // });
+    enqueueSnackbar("Processing invites...", {
+      variant: "info"
+    })
 
     try {
       const invites = usersData.map((u) => ({
@@ -117,18 +114,21 @@ export default function AddUsers({ open, setOpen }: AddUsersProps) {
       setError(null);
 
       // ✅ Success snackbar
-      setSnackbar({
-        open: true,
-        message: "Invites sent successfully!",
-        severity: "success",
-      });
+      // setSnackbar({
+      //   open: true,
+      //   message: "Invites sent successfully!",
+      //   severity: "success",
+      // });
+      enqueueSnackbar("Invite send successfully", {
+        variant: "success"
+      })
+      setOpen(false)
+
     } catch (err: any) {
       setResponse({ error: err.response?.data || err.message });
-      setSnackbar({
-        open: true,
-        message: err.response?.data?.message || "Failed to send invites.",
-        severity: "error",
-      });
+      enqueueSnackbar("Error sending", {
+        variant: "success"
+      })
     } finally {
       setSubmitting(false);
     }
@@ -229,7 +229,7 @@ export default function AddUsers({ open, setOpen }: AddUsersProps) {
           <Typography variant="h5" mb={2} align="center">
             Add Members
           </Typography>
-          <IconButton onClick={() => setOpen(false)} sx={{ position: "absolute" , right:5 , top: 3 }}>
+          <IconButton onClick={() => setOpen(false)} sx={{ position: "absolute", right: 5, top: 3 }}>
             <Close />
           </IconButton>
 
@@ -273,7 +273,7 @@ export default function AddUsers({ open, setOpen }: AddUsersProps) {
               </Button>
 
               <Button variant="outlined" size="small" onClick={handleAddRow}>
-                Add Row
+                Add +
               </Button>
             </Box>
 
@@ -295,7 +295,7 @@ export default function AddUsers({ open, setOpen }: AddUsersProps) {
                         <TableRow key={idx}>
                           <TableCell>
                             <TextField
-                            fullWidth
+                              fullWidth
                               size="small"
                               value={user.email}
                               onChange={(e) =>
@@ -323,7 +323,7 @@ export default function AddUsers({ open, setOpen }: AddUsersProps) {
                           </TableCell>
                           <TableCell>
                             <Select
-                            fullWidth
+                              fullWidth
                               size="small"
                               value={user.role}
                               onChange={(e) =>
@@ -411,21 +411,7 @@ export default function AddUsers({ open, setOpen }: AddUsersProps) {
       </Dialog>
 
       {/* ✅ Snackbar */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-      >
-        <Alert
-          onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
-          severity={snackbar.severity}
-          variant="filled"
-          sx={{ width: "100%" }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+
     </>
   );
 }

@@ -1,20 +1,29 @@
 // AddTestModal.tsx
 import React, { useState } from "react";
-import { Modal, Box, Typography, TextField, Button, MenuItem, CircularProgress } from "@mui/material";
+import {
+  Modal,
+  Box,
+  Typography,
+  TextField,
+  Button,
+  MenuItem,
+  CircularProgress
+} from "@mui/material";
 import axios from "axios";
+import { useSnackbar } from "notistack";
 import { BASE_URL } from "../../config/config";
 
 interface AddTestModalProps {
   open: boolean;
   onClose: () => void;
-  sectionId:string
+  sectionId: string;
 }
 
 interface TestForm {
   name: string;
   description: string;
   duration: number;
-  visibility: "private"; 
+  visibility: "private";
   category: "Placements" | "Gate";
 }
 
@@ -41,12 +50,11 @@ const defaultForm: TestForm = {
 const AddTestModal: React.FC<AddTestModalProps> = ({ open, onClose, sectionId }) => {
   const [form, setForm] = useState<TestForm>(defaultForm);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-  const [isError, setIsError] = useState(false);
+  const { enqueueSnackbar } = useSnackbar();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setForm(prev => ({
+    setForm((prev) => ({
       ...prev,
       [name]: name === "duration" ? Number(value) : value,
     }));
@@ -54,40 +62,30 @@ const AddTestModal: React.FC<AddTestModalProps> = ({ open, onClose, sectionId })
 
   const handleCreateTest = async () => {
     if (!form.name.trim()) {
-      setMessage("Test name is required");
-      setIsError(true);
+      enqueueSnackbar("Test name is required", { variant: "error" });
       return;
     }
     if (form.duration <= 0) {
-      setMessage("Duration must be greater than 0");
-      setIsError(true);
+      enqueueSnackbar("Duration must be greater than 0", { variant: "error" });
       return;
     }
 
     setLoading(true);
-    setMessage("");
-    setIsError(false);
 
     try {
-      const res = await axios.post(
+      await axios.post(
         `${BASE_URL}/api/campus/create/test/${sectionId}`,
-        form ,
+        form,
         { withCredentials: true }
       );
 
-      if (res.data?.data) {
-        setMessage("Test created successfully!");
-        setIsError(false);
-        // onTestCreated?.(res.data.data);
-        setForm(defaultForm); // reset form
-      } else {
-        setMessage(res.data?.error || "Failed to create test");
-        setIsError(true);
-      }
+        enqueueSnackbar("✅ Test created successfully!", { variant: "success" });
+        onClose()
     } catch (err: any) {
       console.error(err);
-      setMessage(err?.response?.data?.error || "Internal Server Error");
-      setIsError(true);
+      enqueueSnackbar(err?.response?.data?.error || "Internal Server Error", {
+        variant: "error",
+      });
     } finally {
       setLoading(false);
     }
@@ -125,17 +123,6 @@ const AddTestModal: React.FC<AddTestModalProps> = ({ open, onClose, sectionId })
             onChange={handleChange}
             fullWidth
           />
-          {/* <TextField
-            select
-            label="Visibility"
-            name="visibility"
-            value={form.visibility}
-            onChange={handleChange}
-            fullWidth
-          >
-            <MenuItem value="private">Private</MenuItem>
-            <MenuItem value="public">Public</MenuItem>
-          </TextField> */}
           <TextField
             select
             label="Category"
@@ -154,18 +141,12 @@ const AddTestModal: React.FC<AddTestModalProps> = ({ open, onClose, sectionId })
             onClick={handleCreateTest}
             disabled={loading}
             sx={{
-              backgroundColor: '#FF5C01', // Deep Orange
-            color: '#ffffff',
+              backgroundColor: "#FF5C01",
+              color: "#ffffff",
             }}
           >
             {loading ? <CircularProgress size={20} /> : "Create Test"}
           </Button>
-
-          {message && (
-            <Typography textAlign="center" color={isError ? "error" : "success.main"}>
-              {message}
-            </Typography>
-          )}
         </Box>
       </Box>
     </Modal>
