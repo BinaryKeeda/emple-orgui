@@ -1,4 +1,4 @@
-import React, { useState, type FormEvent, type ChangeEvent } from 'react'
+import React, { useState, useMemo, type FormEvent, type ChangeEvent } from 'react'
 import axios from 'axios'
 import { useSelector } from 'react-redux'
 import { BASE_URL, LOGO } from '../config/config'
@@ -10,6 +10,7 @@ import {
   CloudUpload,
   Check,
   Delete,
+  Search,
 } from '@mui/icons-material'
 import {
   Modal,
@@ -23,6 +24,7 @@ import {
   CircularProgress,
   Skeleton,
   Box,
+  InputAdornment,
 } from '@mui/material'
 import Cropper from 'react-easy-crop'
 import { useLogout } from '../hooks/useLogout'
@@ -284,12 +286,13 @@ const SuperAdminDashboard: React.FC = () => {
   const [message, setMessage] = useState<string>('')
   const [modalOpen, setModalOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('') // 🔍
   const logout = useLogout()
   const user = useSelector((s: RootState) => s.auth.user?.user)
   const groudId = useSelector(getGroupOwnerShip)
   const userId = user?.role === 'campus-admin' ? user._id : undefined
-  const { enqueueSnackbar } = useSnackbar();
-  // 👇 Include refetch here
+  const { enqueueSnackbar } = useSnackbar()
+
   const { data, error, isLoading, refetch } = useSections(groudId ?? '', userId)
 
   if (error) return <>{JSON.stringify(error)}</>
@@ -308,13 +311,9 @@ const SuperAdminDashboard: React.FC = () => {
         withCredentials: true,
       })
 
-      // setMessage('Section created successfully!')
-
-      enqueueSnackbar(
-        'Data saved successfully!', { variant: 'success' }
-      )
+      enqueueSnackbar('Section created successfully!', { variant: 'success' })
       setModalOpen(false)
-      await refetch() // 🔥 refresh after create
+      await refetch()
     } catch (err: any) {
       console.error(err)
       setMessage(err.response?.data?.message || 'Error creating section')
@@ -329,11 +328,8 @@ const SuperAdminDashboard: React.FC = () => {
       await axios.post(BASE_URL + '/api/campus/delete/section/' + id, {}, {
         withCredentials: true,
       })
-      // setMessage('Section deleted successfully!')
-           enqueueSnackbar(
-        'Data saved successfully!', { variant: 'success' }
-      )
-      await refetch() // 🔥 refresh after delete
+      enqueueSnackbar('Section deleted successfully!', { variant: 'success' })
+      await refetch()
     } catch (err: any) {
       console.error(err)
       setMessage(err.response?.data?.message || 'Error deleting section')
@@ -341,6 +337,13 @@ const SuperAdminDashboard: React.FC = () => {
       setLoading(false)
     }
   }
+
+  const filteredSections = useMemo(() => {
+    if (!data?.data) return []
+    return data.data.filter((section: any) =>
+      section.name.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  }, [data, searchQuery])
 
   return (
     <>
@@ -362,9 +365,41 @@ const SuperAdminDashboard: React.FC = () => {
       </Backdrop>
 
       {/* Header */}
-      <header className="p-2 border-b border-b-[#e1e1e1] flex gap-3 items-center justify-between px-5">
-        <img src={LOGO} className="h-10" alt="Logo" />
+      <header className="p-2 border-b border-b-[#e1e1e1] flex flex-wrap gap-3 items-center justify-between px-5">
+        <div className="flex items-center gap-3">
+          <img src={LOGO} className="h-10" alt="Logo" />
+          <TextField
+            placeholder="Search sections..."
+            size="small"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search color="action" />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ width: 240 }}
+          />
+        </div>
         <div className="flex gap-4 items-center">
+          
+          <Button
+            onClick={() => setModalOpen(true)}
+            sx={{
+              width: 180,
+              cursor:"none",
+              fontSize: 10,
+              height: 36,
+              // background: 'linear-gradient(90deg, #007BFF 0%, #004A99 100%)',
+              border:"1px solid #e1e1e1",
+              color: '#fff',
+            }}
+            disabled={true}
+          >
+            Master Data 
+          </Button>
           <Button
             onClick={() => setModalOpen(true)}
             sx={{
@@ -392,7 +427,7 @@ const SuperAdminDashboard: React.FC = () => {
         </Typography>
       )}
 
-      {/* 🔥 Section Loading Skeleton */}
+      {/* Section Grid */}
       {isLoading ? (
         <Box className="grid grid-cols-1 p-5 mt-4 md:grid-cols-3 lg:grid-cols-5 gap-6">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -403,18 +438,24 @@ const SuperAdminDashboard: React.FC = () => {
             </Box>
           ))}
         </Box>
-      ) : data && data?.data?.length ? (
+      ) : filteredSections.length ? (
         <div className="grid grid-cols-1 p-5 mt-4 md:grid-cols-3 lg:grid-cols-5 gap-6">
-          {data.data.map((section: any) => (
+          {filteredSections.map((section: any) => (
             <SectionCard key={section._id} section={section} onDelete={handleDelete} />
           ))}
         </div>
       ) : (
         <div className="p-6 text-center text-gray-500 border border-dashed border-gray-300 rounded-lg">
           <Typography variant="body1" gutterBottom>
-            Admin, no sections have been created yet.
+            {searchQuery
+              ? `No results found for "${searchQuery}"`
+              : 'Admin, no sections have been created yet.'}
           </Typography>
-          <Typography variant="body2">Click "Create New Section" to get started.</Typography>
+          {!searchQuery && (
+            <Typography variant="body2">
+              Click "Create New Section" to get started.
+            </Typography>
+          )}
         </div>
       )}
 
