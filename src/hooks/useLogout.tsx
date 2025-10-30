@@ -7,6 +7,7 @@ export const useLogout = () => {
 
   const handleLogout = () => {
     dispatch(logoutUser());
+    window.location.reload()
   };
 
   return handleLogout;

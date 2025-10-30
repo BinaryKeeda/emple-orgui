@@ -46,6 +46,7 @@ const authSlice = createSlice({
       .addCase(logoutUser.fulfilled, (state, action: PayloadAction<boolean>) => {
         if (action.payload) {
           state.user = null;
+          state.loading = false;
         }
       })
       .addCase(logoutUser.pending, (state) => {
