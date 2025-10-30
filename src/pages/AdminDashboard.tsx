@@ -208,9 +208,9 @@ const Dashboard: React.FC = () => {
         </div>
       ) : Array.isArray(user?.ownership) && user.ownership.length ? (
         <div className="grid grid-cols-1 p-5 mt-4 md:grid-cols-3 lg:grid-cols-5 gap-6">
-          {user.ownership.map((o: any) => (
+          {user?.ownership.map((o: any) => (
             <SectionCard
-              key={o.section?._id}
+              key={o?.section?._id}
               section={o.section}
               onDelete={() => handleDelete(o._id)}
             />
