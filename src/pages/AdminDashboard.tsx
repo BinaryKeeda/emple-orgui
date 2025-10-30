@@ -43,16 +43,16 @@ const SectionCard = ({
     <div className="relative flex flex-col rounded-xl bg-white text-gray-700 shadow-md hover:shadow-lg transition-transform hover:scale-[1.02]">
       {/* Logo */}
       <div className="relative h-40 flex items-center justify-center bg-gradient-to-r rounded-t-xl overflow-hidden">
-        {!imgLoaded && section.logo && (
+        {!imgLoaded && section?.logo && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-200 animate-pulse">
             <Typography variant="body2" color="textSecondary">
               Loading...
             </Typography>
           </div>
         )}
-        {section.logo ? (
+        {section?.logo ? (
           <img
-            src={section.logo}
+            src={section?.logo}
             alt={section.name}
             className="h-full w-full object-cover"
             onLoad={() => setImgLoaded(true)}
