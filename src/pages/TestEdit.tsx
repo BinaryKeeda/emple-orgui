@@ -8,12 +8,14 @@ import {
   Paper,
   Accordion,
   AccordionSummary,
-  AccordionDetails
+  AccordionDetails,
+  IconButton
 } from '@mui/material'
 import { useParams } from 'react-router-dom'
 import axios from 'axios'
 import AddIcon from '@mui/icons-material/Add'
 import { BASE_URL } from '../config/config'
+import { Delete } from '@mui/icons-material'
 
 const AddProblemModal = lazy(() => import('./modals/AddTestProblemModal'))
 const AddQuestionModal = lazy(() => import('./modals/AddTestSectionQuestionsModal'))
@@ -283,8 +285,12 @@ export default function EditTestPage(): JSX.Element {
       {test.sections.map((section) => (
         <Paper
           key={section._id}
-          className='p-4 mb-4 shadow-sm border rounded-lg bg-white'
+          elevation={0}
+          className='p-4 relative border-gray-100 mb-4 shadow-sm border rounded-lg bg-white'
         >
+          <IconButton sx={{position:"absolute" , right:8, top:8}}>
+            <Delete sx={{fontSize:18}}/>
+          </IconButton>
           <Typography className='font-semibold text-lg'>
             {section.name}
           </Typography>

@@ -16,6 +16,8 @@ import SchoolIcon from '@mui/icons-material/School'
 import BarChartIcon from '@mui/icons-material/BarChart'
 import StudentsTable from '../components/Users/StudentsTable'
 import { getGroupOwnerShip } from '../store/selectros/userSelector'
+import AddExamForm from './modals/AddExamModal'
+import AddQuestionBank from './modals/AddQuestionBankk'
 
 interface Insights {
   totalUsers: number
@@ -43,6 +45,8 @@ const fetchInsights = async ({
 const SectionPage: React.FC = () => {
   const [quizOpen, setQuizOpen] = useState(false)
   const [testOpen, setTestOpen] = useState(false)
+  const [examOpen, setExamOpen] = useState(false);
+  const [questionBank, setQuestionBank] = useState(false);
   const { id } = useParams<string>()
   const groupId = useSelector(getGroupOwnerShip) ?? ""
 
@@ -127,7 +131,9 @@ const SectionPage: React.FC = () => {
       {/* Action Buttons */}
       <div className='flex flex-wrap gap-4'>
         <ActionButton label='Add Quiz' onClick={() => setQuizOpen(true)} />
-        <ActionButton label='Add Test' onClick={() => setTestOpen(true)} />
+        {/* <ActionButton label='Add Test' onClick={() => setTestOpen(true)} /> */}
+        <ActionButton label='Add Exam' onClick={() => setExamOpen(true)} />
+        <ActionButton label='Add Bank' onClick={() => setQuestionBank(true)} />
 
         {/* ✅ Combined button with dropdown */}
         <div className='relative group'>
@@ -196,7 +202,8 @@ const SectionPage: React.FC = () => {
         onClose={() => setTestOpen(false)}
         sectionId={id as string}
       />
-
+      <AddQuestionBank open={questionBank} onClose={() => setQuestionBank(false)}  />
+       <AddExamForm sectionId={id as string} open={examOpen} onClose={() => setExamOpen(false)} />
       {/* Manage Users */}
       <StudentsTable />
     </div>

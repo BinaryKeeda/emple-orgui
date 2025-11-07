@@ -7,6 +7,9 @@ import { type RootState, type AppDispatch } from './store/store'
 import { fetchProfile } from './store/thunks/userThunks'
 import { RoleBasedRoute, UserRoute } from './auth/ProtectedRoute'
 import Loader from './Layout/Loader'
+import QuestionBank from './pages/QuestionBank'
+import ExamList from './pages/ExamList'
+import ExamEdit from './pages/ExamEdit'
 
 // Pages (lazy imports)
 const Login = React.lazy(() => import('./pages/Login'))
@@ -16,7 +19,7 @@ const SectionEdit = React.lazy(() => import('./pages/SectionEdit'))
 const QuizList = React.lazy(() => import('./pages/QuizList'))
 const TestList = React.lazy(() => import('./pages/TestList'))
 const ManageUsers = React.lazy(() => import('./pages/ManageUsers'))
-
+const QuestionBankEdit = React.lazy(() => import('./pages/QuestionBankEdit'));
 // Editor + Preview
 const EditQuiz = React.lazy(() => import('./pages/QuizEdit'));
 const EditTest = React.lazy(() => import('./pages/TestEdit'))
@@ -74,6 +77,11 @@ const App: React.FC = () => {
               <Route path="test/edit/:slug" element={<EditTest />} />
               <Route path="test/preview/:slug" element={<PreviewTest />} />
               <Route path="manage/users" element={<ManageUsers />} />
+              <Route path='exam' element={<ExamList/>} />
+              <Route path='exam/edit/:slug' element={<ExamEdit/>}/>
+              <Route path='questionbank' element={<QuestionBank/>} />
+              <Route path='questionbank/edit/:slug' element={<QuestionBankEdit/>} />
+              <Route path='' element={<></>}/>x
             </Route>
           </Route>
         </Routes>

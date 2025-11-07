@@ -121,7 +121,7 @@ const AddQuizToSection: React.FC<AddQuizToSectionProps> = ({ open, onClose, sect
             >
               <MenuItem value="Core">Core</MenuItem>
               <MenuItem value="Aptitude">Aptitude</MenuItem>
-              <MenuItem value="Misc">Misc</MenuItem>
+              <MenuItem value="Miscellaneous">Misc</MenuItem>
             </TextField>
 
             <TextField

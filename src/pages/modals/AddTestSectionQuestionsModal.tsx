@@ -1,4 +1,4 @@
-import  { useState, type ChangeEvent } from 'react'
+import { useState, type ChangeEvent } from 'react'
 import {
   Box,
   TextField,
@@ -14,6 +14,7 @@ import { Upload } from '@mui/icons-material'
 import * as XLSX from 'xlsx'
 import axios from 'axios'
 import { BASE_URL } from '../../config/config'
+import { useSnackbar } from 'notistack'
 
 const style = {
   position: 'absolute' as const,
@@ -108,7 +109,7 @@ function ManualQuestionForm({ onSubmit }: ManualQuestionFormProps) {
   }
 
   return (
-    <Box className='space-y-4'>
+    <Box sx={{ display: "flex", flexDirection: "column", gap: "10px" }}>
       <TextField
         size='small'
         label='Question Text'
@@ -242,7 +243,7 @@ export default function AddTestSectionQuestionsModal({
 }: AddTestSectionQuestionsModalProps) {
   const [loading, setLoading] = useState(false)
   const [uploadError, setUploadError] = useState<string | null>(null)
-
+  const { enqueueSnackbar } = useSnackbar();
   const handleJSONUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -325,21 +326,22 @@ export default function AddTestSectionQuestionsModal({
         questions,
         { withCredentials: true }
       )
-      alert('Questions added successfully!')
+      enqueueSnackbar('Questions added successfully!', {
+        variant:"success"
+      })
       onClose()
       onSuccess()
     } catch (err) {
       console.error(err)
-      alert('Failed to submit questions')
+      enqueueSnackbar('Failed to submit questions' , {
+        variant: "error"
+      })
     }
   }
 
   return (
     <Modal open={open} onClose={onClose}>
       <Box sx={style}>
-        <Typography variant='h6' className='mb-4'>
-          Add Questions to Section
-        </Typography>
 
         {/* Upload Buttons */}
         <div className='flex gap-4 mb-4'>

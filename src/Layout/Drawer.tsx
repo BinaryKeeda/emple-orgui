@@ -1,5 +1,5 @@
 import {
-  BallotOutlined,
+  // BallotOutlined,
   // BallotOutlined,
   DashboardOutlined,
   QuizOutlined,
@@ -25,7 +25,7 @@ interface DrawerProps {
 }
 
 const Drawer: React.FC<DrawerProps> = React.memo(
-  ({ showMenu, sectionId , drawerWidth}) => {
+  ({ showMenu, sectionId, drawerWidth }) => {
     const { user } = useSelector((s: RootState) => s.auth)
     const path = useLocation()
 
@@ -42,12 +42,24 @@ const Drawer: React.FC<DrawerProps> = React.memo(
         path: `/dashboard/section/${sectionId}/quiz`,
         type: 'private',
       },
+      // {
+      //   icon: <BallotOutlined sx={{ fontSize: '20px' }} />,
+      //   label: 'Test',
+      //   path: `/dashboard/section/${sectionId}/test`,
+      //   type: 'private',
+      // },
       {
-        icon: <BallotOutlined sx={{ fontSize: '20px' }} />,
-        label: 'Test',
-        path: `/dashboard/section/${sectionId}/test`,
-        type: 'private',
+        icon: <DashboardOutlined />,
+        label: 'Exam',
+        path: `/dashboard/section/${sectionId}/exam`,
+        type: "private"
       },
+      {
+        icon: <DashboardOutlined />,
+        label: 'Question Banks',
+        path: `/dashboard/section/${sectionId}/questionbank`,
+        type: "private"
+      }
     ]
 
     return (
@@ -75,19 +87,17 @@ const Drawer: React.FC<DrawerProps> = React.memo(
                    transition-all duration-300 ease-in-out
                   ${showMenu ? 'justify-start' : 'lg:justify-center'}
                   ${item.upcoming ? 'cursor-not-allowed opacity-50' : ''}
-                  ${
-                    isActive
-                      ? 'bg-gradient-to-r bg-black/90 text-white shadow-md'
-                      : 'hover:bg-orange-500/20 hover:text-orange-200'
+                  ${isActive
+                    ? 'bg-gradient-to-r bg-black/90 text-white shadow-md'
+                    : 'hover:bg-orange-500/20 hover:text-orange-200'
                   }
                   ${!showMenu ? 'hidden lg:flex' : ''}
                 `}
               >
                 {/* Icon */}
                 <span
-                  className={`flex items-center justify-center w-8 h-8 ${
-                    isActive ? 'text-white' : 'text-gray-300'
-                  }`}
+                  className={`flex items-center justify-center w-8 h-8 ${isActive ? 'text-white' : 'text-gray-300'
+                    }`}
                 >
                   {item.icon}
                 </span>
@@ -101,9 +111,8 @@ const Drawer: React.FC<DrawerProps> = React.memo(
 
                 {/* Label */}
                 <span
-                  className={`text-xs font-medium ${
-                    isActive ? 'text-white' : 'text-gray-300'
-                  }`}
+                  className={`text-xs text-center font-medium ${isActive ? 'text-white' : 'text-gray-300'
+                    }`}
                 >
                   {item.label}
                 </span>
