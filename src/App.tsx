@@ -10,6 +10,9 @@ import Loader from './Layout/Loader'
 import QuestionBank from './pages/QuestionBank'
 import ExamList from './pages/ExamList'
 import ExamEdit from './pages/ExamEdit'
+import AddProblem from './pages/AddProblem'
+import ProblemList from './pages/ProblemList'
+import ExamPreview from './pages/ExamPreview'
 
 // Pages (lazy imports)
 const Login = React.lazy(() => import('./pages/Login'))
@@ -77,11 +80,14 @@ const App: React.FC = () => {
               <Route path="test/edit/:slug" element={<EditTest />} />
               <Route path="test/preview/:slug" element={<PreviewTest />} />
               <Route path="manage/users" element={<ManageUsers />} />
-              <Route path='exam' element={<ExamList/>} />
-              <Route path='exam/edit/:slug' element={<ExamEdit/>}/>
-              <Route path='questionbank' element={<QuestionBank/>} />
-              <Route path='questionbank/edit/:slug' element={<QuestionBankEdit/>} />
-              <Route path='' element={<></>}/>x
+              <Route path='exam' element={<ExamList />} />
+              <Route path='exam/edit/:slug' element={<ExamEdit />} />
+              <Route path='exam/preview/:slug' element={<ExamPreview />} />
+
+              <Route path='questionbank' element={<QuestionBank />} />
+              <Route path='questionbank/edit/:slug' element={<QuestionBankEdit />} />
+              <Route path='add-problem/:problemId' element={<AddProblem />} />
+              <Route path='add-problem/' element={<ProblemList />} />
             </Route>
           </Route>
         </Routes>

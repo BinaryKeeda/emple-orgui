@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import axios from "axios";
@@ -26,11 +26,14 @@ import {
   List,
   ListItemButton,
   ListItemText,
+  Pagination,
+  Checkbox,
+  Radio,
 } from "@mui/material";
 import { useSnackbar } from "notistack";
 import {
   Delete,
-  InfoOutlined,
+  Edit,
   Refresh,
 } from "@mui/icons-material";
 import { BASE_URL } from "../config/config";
@@ -85,7 +88,7 @@ export default function ExamEdit() {
 
       {data && (
         <>
-          <ExamMeta data={data} />
+          <ExamMeta examId={examId} data={data} />
           <ExamData examId={data._id} onSuccess={() => queryClient.invalidateQueries({ queryKey: ["exam", examId] })} />
           <SectionList examId={data._id} sections={data.sections} />
         </>
@@ -101,8 +104,11 @@ const ContainerBox = ({ children }: { children: React.ReactNode }) => (
 // ------------------------------------------------
 // EXAM META INFO
 // ------------------------------------------------
-const ExamMeta = ({ data }: any) => {
-  const [formData, setData] = useState({ name: data.name, isAvailable: data.isAvailable });
+const ExamMeta = ({ data, examId }: any) => {
+  const [formData, setData] = useState({
+    name: data.name,
+    isAvailable: data.isAvailable,
+  });
   const [isSaving, setSaving] = useState(false);
   const { enqueueSnackbar } = useSnackbar();
 
@@ -113,17 +119,46 @@ const ExamMeta = ({ data }: any) => {
   const handleUpdate = async () => {
     setSaving(true);
     try {
-      await axios.put(`${BASE_URL}/api/exam/update/${data._id}`, formData);
-      enqueueSnackbar("✅ Exam updated successfully", { variant: "success" });
+      await axios.post(`${BASE_URL}/api/campus/exam/update`, {
+        examId,
+        ...formData,
+      });
+
+      enqueueSnackbar("✅ Exam updated successfully", {
+        variant: "success",
+      });
     } catch (err: any) {
-      enqueueSnackbar(err.response?.data?.message || "Update failed", { variant: "error" });
+      const errorData = err.response?.data;
+
+      if (errorData?.details?.length) {
+        // Show main message first
+        enqueueSnackbar(errorData.message || "❌ Update failed", {
+          variant: "error",
+        });
+
+        // Then show each section-specific issue
+        errorData.details.forEach((item: any) => {
+          enqueueSnackbar(`Section "${item.section}": ${item.reason}`, {
+            variant: "warning",
+          });
+        });
+      } else {
+        // Generic fallback
+        enqueueSnackbar(errorData?.message || "❌ Update failed", {
+          variant: "error",
+        });
+      }
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <Card variant="outlined" sx={{ mt: 3, borderRadius: 3 }}>
+    <Card
+      elevation={0}
+      variant="outlined"
+      sx={{ mt: 3, borderRadius: 3, p: 2 }}
+    >
       <CardHeader title="Exam Settings" />
       <Divider />
       <CardContent>
@@ -144,12 +179,15 @@ const ExamMeta = ({ data }: any) => {
             label="Available"
           />
         </Stack>
+
         <Button
           variant="contained"
           sx={{ mt: 3 }}
           onClick={handleUpdate}
           disabled={isSaving}
-          startIcon={isSaving && <CircularProgress size={18} color="inherit" />}
+          startIcon={
+            isSaving ? <CircularProgress size={18} color="inherit" /> : null
+          }
         >
           {isSaving ? "Saving..." : "Save Changes"}
         </Button>
@@ -195,7 +233,7 @@ const ExamData = ({ examId, onSuccess }: any) => {
   return (
     <Paper elevation={3} sx={{ p: 3, mt: 4, borderRadius: 3 }}>
       <Typography variant="h6" fontWeight={600} gutterBottom>
-        ➕ Add New Section
+        Add New Section
       </Typography>
 
       <Box display="grid" gridTemplateColumns={{ xs: "1fr", md: "repeat(3, 1fr)" }} gap={2}>
@@ -253,19 +291,61 @@ const ExamData = ({ examId, onSuccess }: any) => {
 // ------------------------------------------------
 // SECTION LIST
 // ------------------------------------------------
-
 const SectionList = ({ sections, examId }: any) => {
   const [open, setOpen] = useState(false);
   const [selectedSection, setSelectedSection] = useState<any>(null);
+  const [editData, setEditData] = useState<any>(null);
+  const [saving, setSaving] = useState(false);
   const [poolType, setPoolType] = useState<"question" | "problem" | null>(null);
+
+  const queryClient = useQueryClient();
+  const { enqueueSnackbar } = useSnackbar();
 
   const handleOpen = (section: any) => {
     setSelectedSection(section);
+    setEditData({ ...section });
     setOpen(true);
   };
+
   const handleClose = () => {
     setOpen(false);
     setSelectedSection(null);
+    setEditData(null);
+  };
+
+  const handleChange = (field: string, value: any) => {
+    setEditData((prev: any) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSave = async () => {
+    if (!editData || !selectedSection) return;
+    setSaving(true);
+    try {
+      console.log(editData);
+      await axios.post(
+        `${BASE_URL}/api/exam/update/sections`,
+        { ...editData, examId: examId, sectionId: selectedSection._id }
+      );
+      enqueueSnackbar("Section updated successfully", { variant: "success" });
+      await queryClient.invalidateQueries({ queryKey: ["exam", examId] });
+      handleClose();
+    } catch (err) {
+      console.error(err);
+      enqueueSnackbar("Failed to update section", { variant: "error" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteSection = async (sectionId: string) => {
+    try {
+      await axios.post(`${BASE_URL}/api/exam/delete/sections`, { sectionId, examId });
+      await queryClient.invalidateQueries({ queryKey: ["exam", examId] });
+      enqueueSnackbar("Section deleted successfully", { variant: "success" });
+    } catch (error) {
+      console.error("Failed to delete section:", error);
+      enqueueSnackbar("Failed to delete section", { variant: "error" });
+    }
   };
 
   const handleAddPool = (section: any) => {
@@ -292,11 +372,7 @@ const SectionList = ({ sections, examId }: any) => {
         Sections
       </Typography>
 
-      <Box
-        display="grid"
-        gridTemplateColumns={{ xs: "1fr", sm: "1fr 1fr", md: "1fr 1fr 1fr" }}
-        gap={3}
-      >
+      <Box display="grid" gridTemplateColumns={{ xs: "1fr", sm: "1fr 1fr", md: "1fr 1fr 1fr" }} gap={3}>
         {sections.map((section: any) => {
           const hasPool =
             section.type === "quiz"
@@ -317,17 +393,12 @@ const SectionList = ({ sections, examId }: any) => {
                 "&:hover": { boxShadow: 6 },
               }}
             >
-              <IconButton
-                sx={{ position: "absolute", top: 4, right: 36 }}
-              >
+              <IconButton onClick={() => handleDeleteSection(section._id)} sx={{ position: "absolute", top: 4, right: 36 }}>
                 <Delete />
               </IconButton>
-              <IconButton
-                size="small"
-                sx={{ position: "absolute", top: 8, right: 8 }}
-                onClick={() => handleOpen(section)}
-              >
-                <InfoOutlined />
+
+              <IconButton size="small" sx={{ position: "absolute", top: 8, right: 8 }} onClick={() => handleOpen(section)}>
+                <Edit />
               </IconButton>
 
               <Typography variant="h6" fontWeight={600}>
@@ -358,59 +429,67 @@ const SectionList = ({ sections, examId }: any) => {
         })}
       </Box>
 
-      {/* Section info dialog */}
+      {/* Editable Dialog */}
       <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
-        <DialogTitle>{selectedSection?.title}</DialogTitle>
+        <DialogTitle>Edit Section Info</DialogTitle>
         <Divider />
         <DialogContent dividers>
-          {selectedSection ? (
-            <Stack spacing={1}>
-              <Typography>
-                <strong>Type:</strong> {selectedSection.type}
-              </Typography>
-              <Typography>
-                <strong>Max Questions:</strong> {selectedSection.maxQuestion}
-              </Typography>
-              <Typography>
-                <strong>Max Time:</strong> {selectedSection.maxTime}
-              </Typography>
-              <Typography>
-                <strong>Max Score:</strong> {selectedSection.maxScore}
-              </Typography>
-              <Typography>
-                <strong>Description:</strong>{" "}
-                {selectedSection.description || "No description"}
-              </Typography>
-              {selectedSection.type === "quiz" && selectedSection.questionPool && (
-                <Typography>
-                  <strong>Linked Pool:</strong> {selectedSection.questionPool.name}
-                </Typography>
-              )}
-              {selectedSection.type === "coding" &&
-                selectedSection.problemPool?.length > 0 && (
-                  <Typography>
-                    <strong>Problems:</strong>{" "}
-                    {selectedSection.problemPool.length} added
-                  </Typography>
-                )}
+          {editData ? (
+            <Stack spacing={2}>
+              <TextField
+                label="Title"
+                value={editData.title || ""}
+                onChange={(e) => handleChange("title", e.target.value)}
+                fullWidth
+              />
+              <TextField
+                label="Description"
+                value={editData.description || ""}
+                onChange={(e) => handleChange("description", e.target.value)}
+                fullWidth
+                multiline
+                rows={2}
+              />
+              <TextField
+                label="Max Questions"
+                type="number"
+                value={editData.maxQuestion || ""}
+                onChange={(e) => handleChange("maxQuestion", Number(e.target.value))}
+                fullWidth
+              />
+              <TextField
+                label="Max Time (min)"
+                type="number"
+                value={editData.maxTime || ""}
+                onChange={(e) => handleChange("maxTime", Number(e.target.value))}
+                fullWidth
+              />
+              <TextField
+                label="Max Score"
+                type="number"
+                value={editData.maxScore || ""}
+                onChange={(e) => handleChange("maxScore", Number(e.target.value))}
+                fullWidth
+              />
+
             </Stack>
           ) : (
-            <Typography>Loading...</Typography>
+            <Box display="flex" justifyContent="center" py={3}>
+              <CircularProgress />
+            </Box>
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClose}>Close</Button>
+          <Button onClick={handleClose}>Cancel</Button>
+          <Button onClick={handleSave} variant="contained" disabled={saving}>
+            {saving ? "Saving..." : "Save Changes"}
+          </Button>
         </DialogActions>
       </Dialog>
 
       {/* Pool dialogs */}
       {poolType === "question" && selectedSection && (
-        <AddQuestionPool
-          open
-          examId={examId}
-          onClose={handlePoolClose}
-          data={selectedSection}
-        />
+        <AddQuestionPool open examId={examId} selectedQuestionId={selectedSection.questionPool} onClose={handlePoolClose} data={selectedSection} />
       )}
       {poolType === "problem" && selectedSection && (
         <AddProblemPool
@@ -418,45 +497,66 @@ const SectionList = ({ sections, examId }: any) => {
           open
           onClose={handlePoolClose}
           data={selectedSection}
+          selectedProbIds={selectedSection.problemPool}
         />
       )}
     </Box>
   );
 };
 
-// ✅ Updated AddQuestionPool
+
+
 export const AddQuestionPool = ({
   open,
   onClose,
   data,
   examId,
+  selectedQuestionId
 }: {
   open: boolean;
   onClose: () => void;
   data: any;
   examId: string;
+  selectedQuestionId:string
 }) => {
-  const [selectedPool, setSelectedPool] = useState<any>(data.questionPool || null);
+  const { id } = useParams();
   const queryClient = useQueryClient();
   const { enqueueSnackbar } = useSnackbar();
-  const { id } = useParams()
 
+  const [selectedPoolId, setSelectedPoolId] = useState<string | null>(
+    selectedQuestionId
+  );
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const limit = 10;
+
+
+  // Reset selection when reopened
+  useEffect(() => {
+    if (open) setSelectedPoolId(data.questionPool?._id || null);
+  }, [open, data.questionPool]);
+
+  // 🔹 Fetch all question pools (supports pagination + search)
   const { data: poolData, isLoading } = useQuery({
-    queryKey: ["questionPools", examId],
+    queryKey: ["questionPools", examId, search, page],
     queryFn: async () => {
-      const res = await axios.get(`${BASE_URL}/api/exam/questionbank/${id}`);
-      return res.data;
+      const res = await axios.get(
+        `${BASE_URL}/api/exam/questionbank/${id}?limit=${limit}&page=${page}&search=${search}`
+      );
+      return res.data; // expects { questions: [], total: number }
     },
+    enabled: open,
   });
 
+  // 🔹 Mutation to update selected pool
   const { mutate: updatePool, isPending } = useMutation({
     mutationFn: async () =>
       axios.post(
         `${BASE_URL}/api/exam/add/questionPool/${examId}/${data._id}`,
-        { questionPoolId: selectedPool._id }
+        { questionPoolId: selectedPoolId }
       ),
     onSuccess: () => {
-      enqueueSnackbar("Pool updated successfully", { variant: "success" });
+      enqueueSnackbar("Question pool updated successfully", { variant: "success" });
       queryClient.invalidateQueries({ queryKey: ["exam", examId] });
       onClose();
     },
@@ -466,51 +566,93 @@ export const AddQuestionPool = ({
   });
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
       <DialogTitle>
-        {data.questionPool ? "Update Question Pool" : "Add Question Pool"} for "{data.title}"
+        {data.questionPool
+          ? `Update Question Pool for "${data.title}"`
+          : `Add Question Pool to "${data.title}"`}
       </DialogTitle>
+
       <DialogContent dividers>
+        {/* 🔍 Search Bar */}
+        <Box sx={{ mb: 2, display: "flex", gap: 1 }}>
+          <TextField
+            fullWidth
+            size="small"
+            placeholder="Search question pools..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+          />
+        </Box>
+
+        {/* 🧩 Pools List */}
         {isLoading ? (
-          <CircularProgress />
-        ) : (
-          <List>
-            {poolData?.questions?.length ? (
-              poolData.questions.map((pool: any) => (
+          <Box display="flex" justifyContent="center" py={4}>
+            <CircularProgress />
+          </Box>
+        ) : poolData?.questions?.length ? (
+          <>
+            <List dense sx={{ maxHeight: 400, overflowY: "auto" }}>
+              {poolData.questions.map((pool: any) => (
                 <ListItemButton
                   key={pool._id}
-                  selected={selectedPool?._id === pool._id}
-                  onClick={() => setSelectedPool(pool)}
+                  selected={selectedPoolId === pool._id}
+                  onClick={() => setSelectedPoolId(pool._id)}
                 >
+                  <Radio
+                    checked={selectedPoolId === pool._id}
+                    onChange={() => setSelectedPoolId(pool._id)}
+                    value={pool._id}
+                  />
                   <ListItemText
                     primary={pool.name}
                     secondary={`${pool.questions?.length || 0} questions`}
                   />
                 </ListItemButton>
-              ))
-            ) : (
-              <Typography color="text.secondary">No pools found</Typography>
-            )}
-          </List>
+              ))}
+            </List>
+
+            {/* 📄 Pagination */}
+            <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
+              <Pagination
+                count={Math.ceil((poolData.total || 0) / limit)}
+                page={page}
+                onChange={(_, newPage) => setPage(newPage)}
+                color="primary"
+              />
+            </Box>
+          </>
+        ) : (
+          <Typography color="text.secondary" align="center" py={2}>
+            No question pools found
+          </Typography>
         )}
       </DialogContent>
+
+      {/* 🧭 Actions */}
       <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={onClose} disabled={isPending}>
+          Cancel
+        </Button>
         <Button
-          disabled={!selectedPool || isPending}
+          disabled={!selectedPoolId || isPending}
           onClick={() => updatePool()}
           variant="contained"
         >
           {isPending
             ? "Saving..."
             : data.questionPool
-              ? "Update Pool"
-              : "Add Pool"}
+            ? "Update Pool"
+            : "Add Pool"}
         </Button>
       </DialogActions>
     </Dialog>
   );
 };
+
 
 // ✅ Updated AddProblemPool
 export const AddProblemPool = ({
@@ -518,22 +660,34 @@ export const AddProblemPool = ({
   onClose,
   data,
   examId,
+  selectedProbIds = [],
 }: {
   open: boolean;
   onClose: () => void;
   data: any;
   examId: string;
+  selectedProbIds?: string[];
 }) => {
-  const [selectedProblems, setSelectedProblems] = useState<string[]>(
-    data.problemPool?.map((p: any) => p._id) || []
-  );
   const queryClient = useQueryClient();
   const { enqueueSnackbar } = useSnackbar();
 
+  const [selectedProblems, setSelectedProblems] = useState<string[]>(selectedProbIds);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const limit = 10;
+
+  useEffect(() => {
+    // Update local state when dialog opens with passed IDs
+    if (open) setSelectedProblems(selectedProbIds);
+    console.log(selectedProbIds)
+  }, [open, selectedProbIds]);
+
   const { data: problemData, isLoading } = useQuery({
-    queryKey: ["problems"],
+    queryKey: ["problems", search, page],
     queryFn: async () => {
-      const res = await axios.get(`${BASE_URL}/api/exam/problems?limit=20`);
+      const res = await axios.get(
+        `${BASE_URL}/api/exam/problems?limit=${limit}&page=${page}&search=${search}&isPublic=true`
+      );
       return res.data;
     },
   });
@@ -551,46 +705,83 @@ export const AddProblemPool = ({
         { problemIds: selectedProblems }
       ),
     onSuccess: () => {
-      enqueueSnackbar("Problem pool updated", { variant: "success" });
+      enqueueSnackbar("Problem pool updated successfully", { variant: "success" });
       queryClient.invalidateQueries({ queryKey: ["exam", examId] });
       onClose();
     },
     onError: () => {
-      enqueueSnackbar("Failed to update problems", { variant: "error" });
+      enqueueSnackbar("Failed to update problem pool", { variant: "error" });
     },
   });
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
       <DialogTitle>
         {data.problemPool?.length
           ? `Update Problems for "${data.title}"`
           : `Add Problems to "${data.title}"`}
       </DialogTitle>
+
       <DialogContent dividers>
+        {/* Search Bar */}
+        <Box sx={{ mb: 2, display: "flex", gap: 1 }}>
+          <TextField
+            fullWidth
+            size="small"
+            placeholder="Search problems..."
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+          />
+        </Box>
+
+        {/* Problems List */}
         {isLoading ? (
-          <CircularProgress />
+          <Box display="flex" justifyContent="center" py={4}>
+            <CircularProgress />
+          </Box>
         ) : (
-          <List>
+          <>
             {problemData?.data?.length ? (
-              problemData.data.map((problem: any) => (
-                <ListItemButton
-                  key={problem._id}
-                  selected={selectedProblems.includes(problem._id)}
-                  onClick={() => toggleSelect(problem._id)}
-                >
-                  <ListItemText
-                    primary={problem.title}
-                    secondary={`Difficulty: ${problem.difficulty || "N/A"}`}
+              <>
+                <List dense>
+                  {problemData.data.map((problem: any) => (
+                    <ListItemButton
+                      key={problem._id}
+                      selected={selectedProblems.includes(problem._id)}
+                      onClick={() => toggleSelect(problem._id)}
+                    >
+                      <ListItemText
+                        primary={problem.title}
+                        secondary={`Difficulty: ${problem.difficulty || "N/A"} | Tags: ${problem.tags?.join(", ") || "None"
+                          }`}
+                      />
+                      <Checkbox  checked={selectedProblems.includes(problem._id)} />
+                    </ListItemButton>
+                  ))}
+                </List>
+
+                {/* Pagination */}
+                <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
+                  <Pagination
+                    count={Math.ceil(problemData.total / limit)}
+                    page={page}
+                    onChange={(_, newPage) => setPage(newPage)}
+                    color="primary"
                   />
-                </ListItemButton>
-              ))
+                </Box>
+              </>
             ) : (
-              <Typography color="text.secondary">No problems found</Typography>
+              <Typography color="text.secondary" align="center" py={2}>
+                No problems found
+              </Typography>
             )}
-          </List>
+          </>
         )}
       </DialogContent>
+
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
         <Button

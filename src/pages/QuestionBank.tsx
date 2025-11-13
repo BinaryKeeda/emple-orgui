@@ -88,7 +88,6 @@ const ExamList: React.FC = () => {
     severity: "success" as "success" | "error",
   });
 
-  // -------------------- Debounce Search --------------------
   useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearch(search);
@@ -97,7 +96,6 @@ const ExamList: React.FC = () => {
     return () => clearTimeout(handler);
   }, [search]);
 
-  // -------------------- Query --------------------
   const { data, isLoading } = useQuery({
     queryKey: ["questions", id, page, rowsPerPage, debouncedSearch],
     queryFn: () =>

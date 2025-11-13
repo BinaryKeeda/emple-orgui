@@ -3,12 +3,6 @@ import {
   Box,
   Button,
   TextField,
-  FormControlLabel,
-  Switch,
-  MenuItem,
-  Select,
-  InputLabel,
-  FormControl,
   Typography,
   CircularProgress,
   Modal,
@@ -29,7 +23,6 @@ type AddExamModalProps = {
 
 interface ExamPayload {
   name: string
-  isAvailable: boolean
   sectionId: string
   visibility: 'public' | 'private' | 'restricted'
 }
@@ -42,7 +35,6 @@ const AddExamModal: React.FC<AddExamModalProps> = ({
 }) => {
   const [formData, setFormData] = useState<ExamPayload>({
     name: '',
-    isAvailable: true,
     sectionId,
     visibility: 'public',
   })
@@ -57,13 +49,6 @@ const AddExamModal: React.FC<AddExamModalProps> = ({
     setFormData({ ...formData, [e.target.name]: e.target.value })
   }
 
-  const handleVisibilityChange = (e: any) => {
-    setFormData({ ...formData, visibility: e.target.value })
-  }
-
-  const handleSwitchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, isAvailable: e.target.checked })
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -78,7 +63,6 @@ const AddExamModal: React.FC<AddExamModalProps> = ({
         onSuccess?.()
         setFormData({
           name: '',
-          isAvailable: true,
           sectionId,
           visibility: 'public',
         })
@@ -144,29 +128,7 @@ const AddExamModal: React.FC<AddExamModalProps> = ({
               fullWidth
             />
 
-            <FormControl fullWidth>
-              <InputLabel>Visibility</InputLabel>
-              <Select
-                value={formData.visibility}
-                label="Visibility"
-                onChange={handleVisibilityChange}
-              >
-                <MenuItem value="public">Public</MenuItem>
-                <MenuItem value="private">Private</MenuItem>
-                <MenuItem value="restricted">Restricted</MenuItem>
-              </Select>
-            </FormControl>
-
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={formData.isAvailable}
-                  onChange={handleSwitchChange}
-                  name="isAvailable"
-                />
-              }
-              label="Available"
-            />
+          
 
             {error && (
               <Typography color="error" variant="body2">

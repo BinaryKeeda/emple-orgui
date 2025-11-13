@@ -229,7 +229,7 @@ const ExamList: React.FC = () => {
                     <Tooltip title="Preview Test">
                       <IconButton
                         component={Link}
-                        to={`preview/${test?.slug}`}
+                        to={`preview/${test?._id}`}
                         color="primary"
                         size="small"
                       >

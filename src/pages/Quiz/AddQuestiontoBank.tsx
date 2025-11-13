@@ -14,27 +14,14 @@ import {
   AccordionSummary,
   AccordionDetails,
 } from "@mui/material";
-import { Upload, ExpandMore } from "@mui/icons-material";
+import { Upload, ExpandMore, Download } from "@mui/icons-material";
 import * as XLSX from "xlsx";
 import axios from "axios";
 import { BASE_URL } from "../../config/config";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSnackbar } from "notistack";
 
-interface Option {
-  text: string;
-  isCorrect: boolean;
-}
 
-interface QuestionData {
-  question: string;
-  marks: number;
-  negative: number;
-  topic: string;
-  category: "MCQ" | "MSQ" | "Text";
-  answer?: string;
-  options: Option[];
-}
 
 interface ManualQuestionFormProps {
   onSubmit: (questions: QuestionData[]) => Promise<void>;
@@ -69,13 +56,15 @@ function ManualQuestionForm({ onSubmit }: ManualQuestionFormProps) {
   const [submitting, setSubmitting] = useState(false);
 
   const handleOptionTextChange = (index: number, value: string) => {
+    if (!questionData || !questionData.options) return;
     const updated = [...questionData.options];
     updated[index] = { ...updated[index], text: value };
     setQuestionData({ ...questionData, options: updated });
   };
 
   const handleMCQCorrectChange = (index: number) => {
-    const updated = questionData.options.map((opt, i) => ({
+    if (!questionData || !questionData.options) return;
+    const updated = questionData?.options.map((opt, i) => ({
       ...opt,
       isCorrect: i === index,
     }));
@@ -83,6 +72,7 @@ function ManualQuestionForm({ onSubmit }: ManualQuestionFormProps) {
   };
 
   const handleMSQCorrectToggle = (index: number) => {
+    if (!questionData || !questionData.options) return;
     const updated = [...questionData.options];
     updated[index].isCorrect = !updated[index].isCorrect;
     setQuestionData({ ...questionData, options: updated });
@@ -189,42 +179,66 @@ function ManualQuestionForm({ onSubmit }: ManualQuestionFormProps) {
 
       {(questionData.category === "MCQ" ||
         questionData.category === "MSQ") && (
-        <Box>
-          <Typography sx={{ my: 1 }} className="mb-5 font-medium">
-            Options (4 required):
-          </Typography>
-          {questionData.options.map((opt, idx) => (
-            <Box key={idx} className="flex items-center gap-2 mb-2">
-              {questionData.category === "MCQ" ? (
-                <Radio
-                  size="small"
-                  checked={opt.isCorrect}
-                  onChange={() => handleMCQCorrectChange(idx)}
-                />
-              ) : (
-                <Checkbox
-                  size="small"
-                  checked={opt.isCorrect}
-                  onChange={() => handleMSQCorrectToggle(idx)}
-                />
-              )}
-              <TextField
-                size="small"
-                fullWidth
-                label={`Option ${idx + 1}`}
-                value={opt.text}
-                onChange={(e) => handleOptionTextChange(idx, e.target.value)}
-              />
-            </Box>
-          ))}
-        </Box>
-      )}
+          <Box>
+            <Typography sx={{ my: 1 }} className="mb-5 font-medium">
+              Options (4 required):
+            </Typography>
+            {questionData.options &&
+              questionData.options.map((opt, idx) => (
+                <Box key={idx} className="flex items-center gap-2 mb-2">
+                  {questionData.category === "MCQ" ? (
+                    <Radio
+                      size="small"
+                      checked={opt.isCorrect}
+                      onChange={() => handleMCQCorrectChange(idx)}
+                    />
+                  ) : (
+                    <Checkbox
+                      size="small"
+                      checked={opt.isCorrect}
+                      onChange={() => handleMSQCorrectToggle(idx)}
+                    />
+                  )}
+                  <TextField
+                    size="small"
+                    fullWidth
+                    label={`Option ${idx + 1}`}
+                    value={opt.text}
+                    onChange={(e) => handleOptionTextChange(idx, e.target.value)}
+                  />
+                </Box>
+              ))}
+          </Box>
+        )}
 
       <Button variant="contained" onClick={handleSubmit} disabled={submitting}>
         {submitting ? "Submitting..." : "Add Question"}
       </Button>
     </Box>
   );
+}
+
+interface AddTestSectionQuestionsModalProps {
+  open: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+  bankId: string;
+}
+
+
+interface Option {
+  text: string;
+  isCorrect: boolean;
+}
+
+interface QuestionData {
+  question: string;
+  category: "MCQ" | "MSQ" | "Text";
+  marks: number;
+  negative: number;
+  topic?: string;
+  options?: Option[];
+  answer?: string;
 }
 
 interface AddTestSectionQuestionsModalProps {
@@ -245,7 +259,6 @@ export default function AddTestSectionQuestionsModal({
   const queryClient = useQueryClient();
   const { enqueueSnackbar } = useSnackbar();
 
-  // ✅ React Query mutation for adding questions
   const { mutateAsync, isPending } = useMutation({
     mutationFn: async (questions: QuestionData[]): Promise<void> => {
       await axios.post(
@@ -335,25 +348,162 @@ export default function AddTestSectionQuestionsModal({
     }
   };
 
+  const handleAIKENUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const questions: QuestionData[] = parseAIKEN(text);
+      if (questions.length === 0) {
+        setUploadError("No valid AIKEN questions found");
+        return;
+      }
+      setUploadError(null);
+      setPreviewQuestions(questions);
+    } catch (err) {
+      console.error(err);
+      setUploadError("Invalid AIKEN format");
+    }
+  };
+
+  function parseAIKEN(text: string): QuestionData[] {
+    const lines = text.split(/\r?\n/).map((l) => l.trim());
+    const questions: QuestionData[] = [];
+    let currentQ = "";
+    let options: Option[] = [];
+    let correctAnswer = "";
+
+    for (const line of lines) {
+      if (!line) continue;
+
+      if (/^ANSWER:/i.test(line)) {
+        correctAnswer = line.split(":")[1].trim().toUpperCase();
+        options = options.map((opt, i) => ({
+          ...opt,
+          isCorrect: String.fromCharCode(65 + i) === correctAnswer,
+        }));
+        questions.push({
+          question: currentQ,
+          category: "MCQ",
+          marks: 1,
+          negative: 0,
+          topic: "",
+          options,
+        });
+        currentQ = "";
+        options = [];
+        correctAnswer = "";
+      } else if (/^[A-D]\)/i.test(line)) {
+        options.push({ text: line.substring(2).trim(), isCorrect: false });
+      } else {
+        if (currentQ && options.length > 0) {
+          options = [];
+        }
+        currentQ = line;
+      }
+    }
+    return questions;
+  }
+
+  const downloadSampleJSON = () => {
+    const sample: QuestionData[] = [
+      {
+        question: "What is the capital of France?",
+        category: "MCQ",
+        marks: 1,
+        negative: 0.25,
+        topic: "Geography",
+        options: [
+          { text: "Berlin", isCorrect: false },
+          { text: "Madrid", isCorrect: false },
+          { text: "Paris", isCorrect: true },
+          { text: "Rome", isCorrect: false },
+        ],
+      },
+    ];
+    const blob = new Blob([JSON.stringify(sample, null, 2)], {
+      type: "application/json",
+    });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "sample_questions.json";
+    a.click();
+  };
+
+  const downloadSampleExcel = () => {
+    const data = [
+      {
+        question: "What is the capital of France?",
+        category: "MCQ",
+        marks: 1,
+        negative: 0.25,
+        topic: "Geography",
+        option1: "Berlin",
+        correct1: false,
+        option2: "Madrid",
+        correct2: false,
+        option3: "Paris",
+        correct3: true,
+        option4: "Rome",
+        correct4: false,
+      },
+    ];
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Sample");
+    XLSX.writeFile(wb, "sample_questions.xlsx");
+  };
+
+  const downloadSampleAIKEN = () => {
+    const content = `What is the capital of France?
+                    A) Berlin
+                    B) Madrid
+                    C) Paris
+                    D) Rome
+                    ANSWER: C` ;
+    const blob = new Blob([content], { type: "text/plain" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "sample_questions.txt";
+    a.click();
+  };
+
   const submitQuestions = async (questions: QuestionData[]) => {
     await mutateAsync(questions);
   };
 
   return (
     <Modal open={open} onClose={onClose}>
-      <Box sx={style}>
+      <Box sx={{ ...style, maxHeight: "90vh", overflowY: "auto" }}>
         <Typography variant="h6" className="mb-4">
           Add Questions to Section
         </Typography>
 
-        <div className="flex gap-4 mb-4">
+        {/* ==== Upload Buttons ==== */}
+        <div className="flex gap-3 mb-4 flex-wrap">
           <Button variant="outlined" component="label" startIcon={<Upload fontSize="small" />}>
             Upload JSON
             <input type="file" accept=".json" hidden onChange={handleJSONUpload} />
           </Button>
+          <Button startIcon={<Download />} onClick={downloadSampleJSON}>
+            Download Sample
+          </Button>
+
           <Button variant="outlined" component="label" startIcon={<Upload fontSize="small" />}>
             Upload Excel
             <input type="file" accept=".xlsx,.xls" hidden onChange={handleExcelUpload} />
+          </Button>
+          <Button startIcon={<Download />} onClick={downloadSampleExcel}>
+            Download Sample
+          </Button>
+
+          <Button variant="outlined" component="label" startIcon={<Upload fontSize="small" />}>
+            Upload AIKEN (.txt)
+            <input type="file" accept=".txt" hidden onChange={handleAIKENUpload} />
+          </Button>
+          <Button startIcon={<Download />} onClick={downloadSampleAIKEN}>
+            Download Sample
           </Button>
         </div>
 
@@ -363,11 +513,13 @@ export default function AddTestSectionQuestionsModal({
           </Typography>
         )}
 
+        {/* Manual Entry */}
         <Typography variant="subtitle1" className="mb-2 font-semibold">
           Manual Entry
         </Typography>
         <ManualQuestionForm onSubmit={submitQuestions} />
 
+        {/* Preview Section */}
         {previewQuestions.length > 0 && (
           <Box className="mt-6">
             <Typography variant="subtitle1" className="mb-2 font-semibold">
@@ -393,13 +545,6 @@ export default function AddTestSectionQuestionsModal({
                   <Typography>
                     <strong>Category:</strong> {q.category}
                   </Typography>
-
-                  {q.category === "Text" && (
-                    <Typography>
-                      <strong>Answer:</strong> {q.answer}
-                    </Typography>
-                  )}
-
                   {(q.category === "MCQ" || q.category === "MSQ") && (
                     <Box className="mt-2 space-y-1">
                       {q.options?.map((opt, idx) => (
@@ -429,3 +574,4 @@ export default function AddTestSectionQuestionsModal({
     </Modal>
   );
 }
+
