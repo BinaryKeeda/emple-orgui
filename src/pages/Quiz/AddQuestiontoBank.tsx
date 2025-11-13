@@ -13,13 +13,15 @@ import {
   Accordion,
   AccordionSummary,
   AccordionDetails,
+  IconButton,
 } from "@mui/material";
-import { Upload, ExpandMore, Download } from "@mui/icons-material";
+import { Upload, ExpandMore, Download, Close } from "@mui/icons-material";
 import * as XLSX from "xlsx";
 import axios from "axios";
 import { BASE_URL } from "../../config/config";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSnackbar } from "notistack";
+import { parseAikenFormat } from "../utils/aikenParser";
 
 
 
@@ -354,7 +356,7 @@ export default function AddTestSectionQuestionsModal({
 
     try {
       const text = await file.text();
-      const questions: QuestionData[] = parseAIKEN(text);
+      const questions: QuestionData[] = parseAikenFormat(text);
       if (questions.length === 0) {
         setUploadError("No valid AIKEN questions found");
         return;
@@ -366,45 +368,6 @@ export default function AddTestSectionQuestionsModal({
       setUploadError("Invalid AIKEN format");
     }
   };
-
-  function parseAIKEN(text: string): QuestionData[] {
-    const lines = text.split(/\r?\n/).map((l) => l.trim());
-    const questions: QuestionData[] = [];
-    let currentQ = "";
-    let options: Option[] = [];
-    let correctAnswer = "";
-
-    for (const line of lines) {
-      if (!line) continue;
-
-      if (/^ANSWER:/i.test(line)) {
-        correctAnswer = line.split(":")[1].trim().toUpperCase();
-        options = options.map((opt, i) => ({
-          ...opt,
-          isCorrect: String.fromCharCode(65 + i) === correctAnswer,
-        }));
-        questions.push({
-          question: currentQ,
-          category: "MCQ",
-          marks: 1,
-          negative: 0,
-          topic: "",
-          options,
-        });
-        currentQ = "";
-        options = [];
-        correctAnswer = "";
-      } else if (/^[A-D]\)/i.test(line)) {
-        options.push({ text: line.substring(2).trim(), isCorrect: false });
-      } else {
-        if (currentQ && options.length > 0) {
-          options = [];
-        }
-        currentQ = line;
-      }
-    }
-    return questions;
-  }
 
   const downloadSampleJSON = () => {
     const sample: QuestionData[] = [
@@ -457,10 +420,10 @@ export default function AddTestSectionQuestionsModal({
 
   const downloadSampleAIKEN = () => {
     const content = `What is the capital of France?
-                    A) Berlin
-                    B) Madrid
-                    C) Paris
-                    D) Rome
+                    A. Berlin
+                    B. Madrid
+                    C. Paris
+                    D. Rome
                     ANSWER: C` ;
     const blob = new Blob([content], { type: "text/plain" });
     const a = document.createElement("a");
@@ -476,9 +439,13 @@ export default function AddTestSectionQuestionsModal({
   return (
     <Modal open={open} onClose={onClose}>
       <Box sx={{ ...style, maxHeight: "90vh", overflowY: "auto" }}>
-        <Typography variant="h6" className="mb-4">
-          Add Questions to Section
-        </Typography>
+        <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+
+          <Typography variant="h6" className="mb-4">
+            Add Questions to Section
+          </Typography>
+          <IconButton onClick={onClose} ><Close /></IconButton>
+        </Box>
 
         {/* ==== Upload Buttons ==== */}
         <div className="flex gap-3 mb-4 flex-wrap">
