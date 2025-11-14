@@ -94,9 +94,9 @@ export default function AddTestCases({
         problemId,
         testCases,
       });
-      alert("✅ Test cases saved successfully!");
+      alert("Test cases saved successfully!");
     } catch (error: any) {
-      alert(error.response?.data?.message || "❌ Failed to save test cases");
+      alert(error.response?.data?.message || "Failed to save test cases");
     }
   };
 
@@ -109,7 +109,7 @@ export default function AddTestCases({
         ?.signature ||
       "";
 
-    if (!code.trim()) return alert("⚠️ No code found for this language");
+    if (!code.trim()) return alert("No code found for this language");
 
     try {
       setIsRunning(true);
@@ -148,7 +148,6 @@ export default function AddTestCases({
         backgroundColor: "#fff",
       }}
     >
-      {/* HEADER */}
       <Box
         sx={{
           display: "flex",
@@ -168,7 +167,6 @@ export default function AddTestCases({
         </Button>
       </Box>
 
-      {/* 🧠 LANGUAGE SELECTOR */}
       {problem?.languagesSupported && problem?.languagesSupported?.length > 0 && (
         <FormControl fullWidth size="small" sx={{ maxWidth: 300 }}>
           <InputLabel>Language</InputLabel>
@@ -186,7 +184,6 @@ export default function AddTestCases({
         </FormControl>
       )}
 
-      {/* SLIDER NAVIGATION */}
       <Box
         sx={{
           display: "flex",
