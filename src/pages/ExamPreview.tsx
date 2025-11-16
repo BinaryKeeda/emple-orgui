@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button, CircularProgress, IconButton } from "@mui/material";
 import { useSnackbar } from "notistack";
 import { CloudDownload, Visibility } from "@mui/icons-material";
+import { Link } from "react-router-dom";
 
 interface User {
   name: string;
@@ -174,7 +175,11 @@ const ExamPreview: React.FC = () => {
               <tr key={s._id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-4 py-4 border-b">{s?.userId?.name}</td>
                 <td className="px-4 py-4 border-b">{s?.userId?.email}</td>
-                <td className="px-4 py-4 border-b"><IconButton><Visibility /></IconButton> </td>
+                <td className="px-4 py-4 border-b">
+                  <Link to={s._id}>
+                    <IconButton><Visibility /></IconButton>
+                  </Link>
+                </td>
                 <td className="px-4 py-4 border-b">
                   {new Date(s.updatedAt).toLocaleString()}
                 </td>

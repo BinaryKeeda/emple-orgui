@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button, CircularProgress } from "@mui/material";
 import { useSnackbar } from "notistack";
 import { CloudDownload } from "@mui/icons-material";
+import { Link } from "react-router-dom";
 
 interface Submission {
   _id: string;
@@ -189,9 +190,11 @@ const TestPreview: React.FC = () => {
                 <td className="px-4 py-4 border-b border-b-gray-50">
                   {s.score}
                 </td>
-                <td className="px-4 py-4 border-b border-b-gray-50">
-                  {s.attemptNo}
-                </td>
+                <Link to={s._id}>
+                  <td className="px-4 py-4 border-b border-b-gray-50">
+                    {s.attemptNo}
+                  </td>
+                </Link>
                 <td className="px-4 py-4 border-b border-b-gray-50">
                   {new Date(s.updatedAt).toLocaleString()}
                 </td>

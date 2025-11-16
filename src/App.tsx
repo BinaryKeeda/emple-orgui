@@ -13,6 +13,7 @@ import ExamEdit from './pages/ExamEdit'
 import AddProblem from './pages/AddProblem'
 import ProblemList from './pages/ProblemList'
 import ExamPreview from './pages/ExamPreview'
+import UserTestPreview from './pages/UserTestPreview'
 
 // Pages (lazy imports)
 const Login = React.lazy(() => import('./pages/Login'))
@@ -83,6 +84,7 @@ const App: React.FC = () => {
               <Route path='exam' element={<ExamList />} />
               <Route path='exam/edit/:slug' element={<ExamEdit />} />
               <Route path='exam/preview/:slug' element={<ExamPreview />} />
+              <Route path='exam/preview/:slug/:attemptId' element={<UserTestPreview />} />
               <Route path='questionbank' element={<QuestionBank />} />
               <Route path='questionbank/edit/:slug' element={<QuestionBankEdit />} />
               <Route path='add-problem/:problemId' element={<AddProblem />} />
