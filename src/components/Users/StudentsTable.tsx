@@ -68,10 +68,12 @@ const StudentsTable: React.FC = () => {
   const [status, setStatus] = useState('all')
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
+  const [deleteStatus, setDeleteStatus] = useState<string>('invite')
   const limit = 10
   const { id: sectionId } = useParams<{ id: string }>()
   const { enqueueSnackbar } = useSnackbar()
   const user = useSelector((s: RootState) => s.auth.user)
+
   // -------------------- Debounce Search --------------------
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -89,8 +91,16 @@ const StudentsTable: React.FC = () => {
   })
 
   // -------------------- Delete Confirmation --------------------
-  const handleRemoveClick = (userId: string) => {
+  const handleRemoveClick = (userId: string, userStatus: string) => {
     setSelectedUserId(userId)
+
+    // map status → member/admin/invite
+    const mapped =
+      userStatus === 'member' || userStatus === 'admin'
+        ? userStatus
+        : 'invite'
+
+    setDeleteStatus(mapped)
     setConfirmOpen(true)
   }
 
@@ -98,9 +108,11 @@ const StudentsTable: React.FC = () => {
     if (!selectedUserId) return
 
     try {
-      await axios.delete(`${BASE_URL}/api/campus/students/${sectionId}/${selectedUserId}`, {
-        withCredentials: true,
-      })
+      await axios.delete(
+        `${BASE_URL}/api/campus/students/${sectionId}/${selectedUserId}?status=${deleteStatus}`,
+        { withCredentials: true }
+      )
+
       enqueueSnackbar('Student removed successfully!', { variant: 'success' })
       refetch()
     } catch (err) {
@@ -198,7 +210,7 @@ const StudentsTable: React.FC = () => {
                         <IconButton
                           size='small'
                           color='error'
-                          onClick={() => handleRemoveClick(user._id)}
+                          onClick={() => handleRemoveClick(user._id, user.status)}
                         >
                           <Delete />
                         </IconButton>

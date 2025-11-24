@@ -1,4 +1,4 @@
-import { Box, Typography, Button } from "@mui/material";
+import { Box, Typography } from "@mui/material";
 
 const steps = [
   { id: "basic", label: "Question Details" },
@@ -11,11 +11,10 @@ export default function Sidebar({ activeStep, setActiveStep }:any) {
   return (
     <Box
       sx={{
-        width: 250,
         border: "1px solid #e0e0e0",
         p: 3,
-        bgcolor: "#fafafa",
-        height:"max-content"
+        width: "250px",
+        height:"max-content",
       }}
     >
       <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
@@ -59,29 +58,7 @@ export default function Sidebar({ activeStep, setActiveStep }:any) {
         </Box>
       ))}
 
-      <Box
-        sx={{
-          mt: 4,
-          p: 2,
-          border: "1px solid #ddd",
-          borderRadius: 2,
-          bgcolor: "#fff",
-        }}
-      >
-        <Typography variant="subtitle2" fontWeight={600}>
-          Quality review
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          3–15 test cases are recommended
-        </Typography>
-        <Button
-          variant="text"
-          size="small"
-          sx={{ mt: 1, textTransform: "none" }}
-        >
-          Add test cases
-        </Button>
-      </Box>
+     
     </Box>
   );
 }

@@ -12,6 +12,7 @@ import {
 import axios from "axios";
 import { useSnackbar } from "notistack";
 import { BASE_URL } from "../../config/config";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface AddTestModalProps {
   open: boolean;
@@ -51,7 +52,7 @@ const AddTestModal: React.FC<AddTestModalProps> = ({ open, onClose, sectionId })
   const [form, setForm] = useState<TestForm>(defaultForm);
   const [loading, setLoading] = useState(false);
   const { enqueueSnackbar } = useSnackbar();
-
+  const queryClient = useQueryClient();
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setForm((prev) => ({
@@ -79,7 +80,8 @@ const AddTestModal: React.FC<AddTestModalProps> = ({ open, onClose, sectionId })
         { withCredentials: true }
       );
 
-        enqueueSnackbar("✅ Test created successfully!", { variant: "success" });
+        enqueueSnackbar("Test created successfully!", { variant: "success" });
+        await queryClient.invalidateQueries({ queryKey: ["exam"] });
         onClose()
     } catch (err: any) {
       console.error(err);
@@ -143,6 +145,7 @@ const AddTestModal: React.FC<AddTestModalProps> = ({ open, onClose, sectionId })
             sx={{
               backgroundColor: "#FF5C01",
               color: "#ffffff",
+              
             }}
           >
             {loading ? <CircularProgress size={20} /> : "Create Test"}

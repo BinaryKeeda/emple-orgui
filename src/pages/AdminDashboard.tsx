@@ -4,7 +4,6 @@ import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
-  Logout,
   Notifications as NotificationsIcon,
 } from "@mui/icons-material";
 import {
@@ -27,6 +26,8 @@ import { useLogout } from "../hooks/useLogout";
 import type { RootState } from "../store/store";
 import NotificationsDrawer from "../Layout/NotificationDrawer";
 import useInvitation from "../hooks/useInviation";
+import AccountMenu from "./modals/AccountMenu";
+import ResetPasswordModal from "./modals/ResetPassword";
 
 /* --------------------------- Section Card --------------------------- */
 const SectionCard = ({
@@ -118,7 +119,7 @@ const Dashboard: React.FC = () => {
   const [notificationOpen, setNotificationOpen] = useState<boolean>(false);
   const [confirmOpen, setConfirmOpen] = useState<boolean>(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-
+  const [resetPassword, setResetPassword] = useState<boolean>(false);
   const logout = useLogout();
   const { enqueueSnackbar } = useSnackbar();
   const user = useSelector((s: RootState) => s.auth.user);
@@ -146,7 +147,6 @@ const Dashboard: React.FC = () => {
         variant: "success",
         autoHideDuration: 2500,
       });
-      // Optionally refresh page or remove deleted section from state
     } catch (err: any) {
       enqueueSnackbar("Failed to delete section!", {
         variant: "error",
@@ -180,13 +180,13 @@ const Dashboard: React.FC = () => {
               </Badge>
             </IconButton>
           </Tooltip>
-
+          <Button onClick={() => setResetPassword(true)} >
+            Reset Password
+          </Button>
           {/* Logout */}
-          <Tooltip title="Logout" arrow>
-            <IconButton onClick={logout} size="small" sx={{ color: "#f44336" }}>
-              <Logout sx={{ cursor: "pointer" }} />
-            </IconButton>
-          </Tooltip>
+          <AccountMenu onLogout={logout} name={user?.user?.name || ""} email={user?.user?.email || ""} profilePic={user?.user?.avatar || null} />
+         
+
         </div>
       </header>
 
@@ -243,6 +243,8 @@ const Dashboard: React.FC = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <ResetPasswordModal open={resetPassword} onClose={() => {setResetPassword(false)}} /> 
     </>
   );
 };

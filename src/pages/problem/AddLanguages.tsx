@@ -24,6 +24,7 @@ import "ace-builds/src-noconflict/mode-python";
 import "ace-builds/src-noconflict/theme-github";
 import "ace-builds/src-noconflict/ext-language_tools";
 import "ace-builds/src-noconflict/ext-searchbox";
+import { useSnackbar } from "notistack";
 
 interface AddLanguagesProps {
   setActiveStep: React.Dispatch<React.SetStateAction<number>>;
@@ -37,8 +38,7 @@ const AddLanguages: React.FC<AddLanguagesProps> = ({ problemId }) => {
   const queryClient = useQueryClient();
 
   const { problem, loading: problemLoading } = useProblemDetails();
-
-  // 🟡 Load code from problem.languages if available
+  const { enqueueSnackbar } = useSnackbar();
   useEffect(() => {
     if (!problem) return;
 
@@ -53,14 +53,10 @@ const AddLanguages: React.FC<AddLanguagesProps> = ({ problemId }) => {
     }
   }, [selectedLang, problem]);
 
-  // 🟢 Save / Update language
   const { mutateAsync: saveLanguage, isPending } = useMutation({
     mutationFn: async () => {
       if (!problemId) return;
       const payload = { language: selectedLang, code, problemId };
-      // const existingLang = problem?.functionSignature?.find(
-      //   (l: any) => l.language === selectedLang
-      // );
 
       await axios.post(
         `${BASE_URL}/api/campus/problem/add/languages`,
@@ -70,7 +66,7 @@ const AddLanguages: React.FC<AddLanguagesProps> = ({ problemId }) => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["problem", problemId] });
-      alert(`✅ ${selectedLang.toUpperCase()} code saved successfully!`);
+      enqueueSnackbar({ message: `${selectedLang.toUpperCase()} code saved successfully!`, variant: 'success' });
     },
   });
 

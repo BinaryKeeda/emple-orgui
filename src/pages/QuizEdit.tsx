@@ -26,13 +26,16 @@ import AddQuestion from './Quiz/AddQuestion'
 import { useSnackbar } from 'notistack'
 import { BASE_URL } from '../config/config'
 import type { RootState } from '../store/store'
+import DeleteConfirmBox from '../Layout/DeleteConfirmBox'
+
+// 🔥 ADDED
 
 // Lazy imports
 const AddQuestionAiken = lazy(() => import('./Quiz/AddQuestionAiken'))
 const AddQuestonJSON = lazy(() => import('./Quiz/AddQuestionJson'))
 const AddQuestionExcel = lazy(() => import('./Quiz/AddQuestionExcel'))
 
-// ========== Type Definitions ==========
+// Types...
 interface Option {
   text: string
   isCorrect: boolean
@@ -65,17 +68,21 @@ interface QuizEditProps {
   onRefresh: () => void
 }
 
-// ========== Component ==========
+// Component
 const EditQuiz: React.FC = () => {
   const [ModalClose, setModalClose] = useState(true)
   const [showJsonModal, setShowJsonModal] = useState(false)
   const [showAiken, setShowAiken] = useState(false)
   const [currentQuiz, setCurrentQuiz] = useState<Quiz | null>(null)
-  const { slug: id} = useParams<{ slug: string }>()
+  const { slug: id } = useParams<{ slug: string }>()
   const [currentMarks, setCurrentMarks] = useState<number>(0)
   const [maxMarks, setMaxMarks] = useState<number>(0)
   const [refresh, setRefresh] = useState(false)
   const { enqueueSnackbar } = useSnackbar()
+
+  // 🔥 DELETE CONFIRM DIALOG STATE
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [questionToDelete, setQuestionToDelete] = useState<string | null>(null)
 
   // Fetch quiz data
   useEffect(() => {
@@ -101,7 +108,7 @@ const EditQuiz: React.FC = () => {
     }
   }, [currentQuiz])
 
-  // Delete question
+  // DELETE request function
   const handleDeleteQuestion = async (questionId: string) => {
     try {
       await axios.delete(
@@ -126,7 +133,7 @@ const EditQuiz: React.FC = () => {
 
   return (
     <section className='flex flex-col gap-6'>
-      {/* Header and Upload Buttons */}
+      {/* Header */}
       <div className='flex flex-col md:flex-row md:justify-between md:items-center bg-white rounded-md shadow-sm p-6 gap-4'>
         <div className='flex flex-col text-sm'>
           <span className='text-gray-600'>
@@ -162,7 +169,7 @@ const EditQuiz: React.FC = () => {
         </div>
       </div>
 
-      {/* Quiz Edit Form */}
+      {/* Edit Form */}
       <QuizEdit data={currentQuiz} onRefresh={() => setRefresh(prev => !prev)} />
 
       {/* Add Question */}
@@ -174,39 +181,45 @@ const EditQuiz: React.FC = () => {
         onRefresh={() => setRefresh(prev => !prev)}
       />
 
-      {/* Questions List */}
+      {/* Questions */}
       <section className='bg-white p-6 rounded-md shadow-sm'>
         <h2 className='text-lg font-semibold mb-4'>Questions</h2>
+
         {currentQuiz.questions.length > 0 ? (
           currentQuiz.questions.map((item, index) => (
             <Accordion key={item._id} className='mb-3 rounded-md border'>
-              <AccordionSummary
-                expandIcon={<ArrowDropDown />}
-                sx={{ flexDirection: 'row-reverse', alignItems: 'center' }}
-              >
+              <AccordionSummary expandIcon={<ArrowDropDown />}>
                 <div className='flex w-full justify-between items-center'>
                   <h3 className='text-sm font-medium'>
                     Question {index + 1}:{' '}
                     <span className='ml-2 font-normal'>{item.question}</span>
                   </h3>
+
                   <div className='flex items-center gap-3'>
+                    {/* 🔥 Replace direct delete with confirmation */}
                     <IconButton
-                      onClick={() => handleDeleteQuestion(item._id)}
+                      onClick={() => {
+                        setQuestionToDelete(item._id)
+                        setDeleteDialogOpen(true)
+                      }}
                       size='small'
                     >
                       <Delete sx={{ color: 'gray' }} />
                     </IconButton>
+
                     <span className='text-xs text-gray-600'>
                       {item.marks} Marks
                     </span>
                   </div>
                 </div>
               </AccordionSummary>
+
               <AccordionDetails>
                 <div className='px-4 text-sm flex flex-col gap-2'>
                   <p>
                     <strong>Type:</strong> {item.category}
                   </p>
+
                   {item.image && (
                     <img
                       src={item.image}
@@ -214,6 +227,7 @@ const EditQuiz: React.FC = () => {
                       className='my-2 h-24 w-auto object-contain rounded-md border'
                     />
                   )}
+
                   {item.category === 'Text' && (
                     <TextField
                       label='Answer'
@@ -223,6 +237,7 @@ const EditQuiz: React.FC = () => {
                       fullWidth
                     />
                   )}
+
                   {(item.category === 'MCQ' || item.category === 'MSQ') &&
                     item.options?.map((opt, k) => (
                       <div key={k} className='flex items-center gap-2'>
@@ -240,9 +255,7 @@ const EditQuiz: React.FC = () => {
             </Accordion>
           ))
         ) : (
-          <p className='text-sm text-gray-500 italic'>
-            No Questions to display
-          </p>
+          <p className='text-sm text-gray-500 italic'>No Questions to display</p>
         )}
       </section>
 
@@ -264,6 +277,7 @@ const EditQuiz: React.FC = () => {
           />
         </Suspense>
       )}
+
       {showJsonModal && (
         <AddQuestonJSON
           id={id!}
@@ -279,6 +293,7 @@ const EditQuiz: React.FC = () => {
           }
         />
       )}
+
       {showAiken && (
         <AddQuestionAiken
           id={id!}
@@ -294,11 +309,27 @@ const EditQuiz: React.FC = () => {
           }
         />
       )}
+
+      {/* 🔥 DELETE CONFIRM DIALOG */}
+      <DeleteConfirmBox
+        open={deleteDialogOpen}
+        title="Delete Question?"
+        message="This question will be permanently removed from the quiz."
+        onCancel={() => {
+          setDeleteDialogOpen(false)
+          setQuestionToDelete(null)
+        }}
+        onConfirm={() => {
+          if (questionToDelete) handleDeleteQuestion(questionToDelete)
+          setDeleteDialogOpen(false)
+          setQuestionToDelete(null)
+        }}
+      />
     </section>
   )
 }
 
-// ========== Edit Quiz Form ==========
+// === Edit Quiz form (unchanged) ===
 export const QuizEdit: React.FC<QuizEditProps> = ({ data, onRefresh }) => {
   const userId = useSelector((s: RootState) => s.auth.user?.user._id)
   const { enqueueSnackbar } = useSnackbar()
@@ -353,6 +384,7 @@ export const QuizEdit: React.FC<QuizEditProps> = ({ data, onRefresh }) => {
           <label className='block text-sm font-semibold mb-1'>Creator</label>
           <TextField size='small' type='text' fullWidth value={userId} />
         </div>
+
         <div>
           <label className='block text-sm font-semibold mb-1'>Title</label>
           <TextField
@@ -364,6 +396,7 @@ export const QuizEdit: React.FC<QuizEditProps> = ({ data, onRefresh }) => {
             onChange={changeHandler}
           />
         </div>
+
         <div>
           <label className='block text-sm font-semibold mb-1'>Marks</label>
           <TextField
@@ -375,6 +408,7 @@ export const QuizEdit: React.FC<QuizEditProps> = ({ data, onRefresh }) => {
             fullWidth
           />
         </div>
+
         <div>
           <label className='block text-sm font-semibold mb-1'>
             Duration (min)
@@ -388,6 +422,7 @@ export const QuizEdit: React.FC<QuizEditProps> = ({ data, onRefresh }) => {
             fullWidth
           />
         </div>
+
         <div>
           <label className='block text-sm font-semibold mb-1'>Category</label>
           <FormControl fullWidth>
@@ -403,6 +438,7 @@ export const QuizEdit: React.FC<QuizEditProps> = ({ data, onRefresh }) => {
             </Select>
           </FormControl>
         </div>
+
         <div>
           <label className='block text-sm font-semibold mb-1'>Difficulty</label>
           <FormControl fullWidth>
@@ -418,6 +454,7 @@ export const QuizEdit: React.FC<QuizEditProps> = ({ data, onRefresh }) => {
             </Select>
           </FormControl>
         </div>
+
         <div className='flex items-center gap-2 mt-2'>
           <label className='text-sm font-semibold'>Available</label>
           <Checkbox
@@ -426,8 +463,9 @@ export const QuizEdit: React.FC<QuizEditProps> = ({ data, onRefresh }) => {
             name='isAvailable'
           />
         </div>
+
         <div className='col-span-full'>
-          <Button type='submit' variant='contained' color='primary'>
+          <Button type='submit' variant='contained'>
             Update Quiz
           </Button>
         </div>

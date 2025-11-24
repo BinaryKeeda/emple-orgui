@@ -56,7 +56,7 @@ function ManualQuestionForm({ onSubmit }: ManualQuestionFormProps) {
   });
 
   const [submitting, setSubmitting] = useState(false);
-
+  const queryClient = useQueryClient();
   const handleOptionTextChange = (index: number, value: string) => {
     if (!questionData || !questionData.options) return;
     const updated = [...questionData.options];
@@ -93,6 +93,8 @@ function ManualQuestionForm({ onSubmit }: ManualQuestionFormProps) {
         answer: "",
         options: Array(4).fill({ text: "", isCorrect: false }),
       });
+      await queryClient.invalidateQueries({ queryKey: ['questions'] })
+
     } catch (err) {
       console.error(err);
     } finally {

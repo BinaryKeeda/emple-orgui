@@ -298,6 +298,10 @@ const SectionList = ({ sections, examId }: any) => {
   const [saving, setSaving] = useState(false);
   const [poolType, setPoolType] = useState<"question" | "problem" | null>(null);
 
+  // NEW STATES FOR DELETE CONFIRM
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
   const queryClient = useQueryClient();
   const { enqueueSnackbar } = useSnackbar();
 
@@ -321,16 +325,16 @@ const SectionList = ({ sections, examId }: any) => {
     if (!editData || !selectedSection) return;
     setSaving(true);
     try {
-      console.log(editData);
-      await axios.post(
-        `${BASE_URL}/api/exam/update/sections`,
-        { ...editData, examId: examId, sectionId: selectedSection._id }
-      );
+      await axios.post(`${BASE_URL}/api/exam/update/sections`, {
+        ...editData,
+        examId: examId,
+        sectionId: selectedSection._id,
+      });
+
       enqueueSnackbar("Section updated successfully", { variant: "success" });
       await queryClient.invalidateQueries({ queryKey: ["exam", examId] });
       handleClose();
     } catch (err) {
-      console.error(err);
       enqueueSnackbar("Failed to update section", { variant: "error" });
     } finally {
       setSaving(false);
@@ -339,11 +343,14 @@ const SectionList = ({ sections, examId }: any) => {
 
   const handleDeleteSection = async (sectionId: string) => {
     try {
-      await axios.post(`${BASE_URL}/api/exam/delete/sections`, { sectionId, examId });
+      await axios.post(`${BASE_URL}/api/exam/delete/sections`, {
+        sectionId,
+        examId,
+      });
+
       await queryClient.invalidateQueries({ queryKey: ["exam", examId] });
       enqueueSnackbar("Section deleted successfully", { variant: "success" });
     } catch (error) {
-      console.error("Failed to delete section:", error);
       enqueueSnackbar("Failed to delete section", { variant: "error" });
     }
   };
@@ -393,17 +400,30 @@ const SectionList = ({ sections, examId }: any) => {
                 "&:hover": { boxShadow: 6 },
               }}
             >
-              <IconButton onClick={() => handleDeleteSection(section._id)} sx={{ position: "absolute", top: 4, right: 36 }}>
+              {/* DELETE ICON (opens dialog) */}
+              <IconButton
+                onClick={() => {
+                  setDeleteId(section._id);
+                  setConfirmDelete(true);
+                }}
+                sx={{ position: "absolute", top: 4, right: 36 }}
+              >
                 <Delete />
               </IconButton>
 
-              <IconButton size="small" sx={{ position: "absolute", top: 8, right: 8 }} onClick={() => handleOpen(section)}>
+              {/* EDIT ICON */}
+              <IconButton
+                size="small"
+                sx={{ position: "absolute", top: 8, right: 8 }}
+                onClick={() => handleOpen(section)}
+              >
                 <Edit />
               </IconButton>
 
               <Typography variant="h6" fontWeight={600}>
                 {section.title}
               </Typography>
+
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                 Type: {section.type}
               </Typography>
@@ -429,7 +449,7 @@ const SectionList = ({ sections, examId }: any) => {
         })}
       </Box>
 
-      {/* Editable Dialog */}
+      {/* EDIT DIALOG */}
       <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
         <DialogTitle>Edit Section Info</DialogTitle>
         <Divider />
@@ -471,7 +491,6 @@ const SectionList = ({ sections, examId }: any) => {
                 onChange={(e) => handleChange("maxScore", Number(e.target.value))}
                 fullWidth
               />
-
             </Stack>
           ) : (
             <Box display="flex" justifyContent="center" py={3}>
@@ -487,10 +506,45 @@ const SectionList = ({ sections, examId }: any) => {
         </DialogActions>
       </Dialog>
 
-      {/* Pool dialogs */}
+      {/* DELETE CONFIRMATION DIALOG */}
+      <Dialog open={confirmDelete} onClose={() => setConfirmDelete(false)}>
+        <DialogTitle>Delete Section</DialogTitle>
+        <DialogContent dividers>
+          <Typography>
+            Are you sure you want to delete this section? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={() => setConfirmDelete(false)}>Cancel</Button>
+
+          <Button
+            color="error"
+            variant="contained"
+            onClick={async () => {
+              if (!deleteId) return;
+
+              await handleDeleteSection(deleteId);
+              setConfirmDelete(false);
+              setDeleteId(null);
+            }}
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* POOL DIALOGS */}
       {poolType === "question" && selectedSection && (
-        <AddQuestionPool open examId={examId} selectedQuestionId={selectedSection.questionPool} onClose={handlePoolClose} data={selectedSection} />
+        <AddQuestionPool
+          open
+          examId={examId}
+          selectedQuestionId={selectedSection.questionPool}
+          onClose={handlePoolClose}
+          data={selectedSection}
+        />
       )}
+
       {poolType === "problem" && selectedSection && (
         <AddProblemPool
           examId={examId}

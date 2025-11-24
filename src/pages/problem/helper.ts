@@ -3,7 +3,7 @@ import axios from "axios";
 import { BASE_URL } from "../../config/config";
 
 
-const JUDGE0_BASE = BASE_URL + "/api/data/executecode";
+export const JUDGE0_BASE = BASE_URL + "/api/data/executecode";
 
 // const headers = {
 //   "x-rapidapi-key": "e96b097e4dmshafa6ce31b0791dep1358c6jsn1444e6ac5663",

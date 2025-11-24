@@ -1,4 +1,4 @@
-import React, { useState, useMemo, type FormEvent, type ChangeEvent } from 'react'
+import React, { useState, type FormEvent, type ChangeEvent } from 'react'
 import axios from 'axios'
 import { useSelector } from 'react-redux'
 import { BASE_URL, LOGO } from '../config/config'
@@ -6,7 +6,6 @@ import { useNavigate } from 'react-router-dom'
 import {
   Add,
   ArrowRight,
-  Logout,
   CloudUpload,
   Check,
   Delete,
@@ -25,6 +24,12 @@ import {
   Skeleton,
   Box,
   InputAdornment,
+  DialogActions,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  Pagination,
+  Checkbox,
 } from '@mui/material'
 import Cropper from 'react-easy-crop'
 import { useLogout } from '../hooks/useLogout'
@@ -32,6 +37,8 @@ import { getGroupOwnerShip } from '../store/selectros/userSelector'
 import useSections from './hooks/useSections'
 import type { RootState } from '../store/store'
 import { useSnackbar } from 'notistack'
+import AccountMenu from './modals/AccountMenu'
+import DeleteConfirmBox from '../Layout/DeleteConfirmBox'
 
 /* ----------------------------- Helper function ---------------------------- */
 const getCroppedImg = async (imageSrc: string, crop: any, zoom: number) => {
@@ -203,6 +210,8 @@ const CreateSectionModal = ({
   )
 }
 
+// const 
+
 /* --------------------------- Section Card --------------------------- */
 const SectionCard = ({
   section,
@@ -213,6 +222,18 @@ const SectionCard = ({
 }) => {
   const [imgLoaded, setImgLoaded] = useState(false)
   const navigate = useNavigate()
+
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const handleDelete = () => {
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      setTimeout(() => setConfirmDelete(false), 3000);
+      return;
+    }
+    onDelete(section._id);
+  }
+
 
   return (
     <div className="relative flex flex-col rounded-xl bg-white text-gray-700 shadow-md hover:shadow-lg transition-transform hover:scale-[1.02]">
@@ -239,7 +260,7 @@ const SectionCard = ({
         <Tooltip title="Delete" arrow>
           <IconButton
             size="small"
-            onClick={() => onDelete(section._id)}
+            onClick={handleDelete}
             sx={{
               position: 'absolute',
               top: 8,
@@ -277,102 +298,289 @@ const SectionCard = ({
           Proceed
         </Button>
       </div>
+      <DeleteConfirmBox
+        open={confirmDelete}
+        onCancel={() => setConfirmDelete(false)}
+        onConfirm={handleDelete}
+        title="Delete Section"
+        message={`Are you sure you want to delete the section "${section.name}"? This action cannot be undone.`}
+
+      />
     </div>
   )
 }
 
+
+type NotificationForm = {
+  userId: string;
+  groupId: string;
+  sectionId: string[];
+  text: string;
+};
+
+// --------------------- COMPONENT --------------------- //
+
+type Props = {
+  open: boolean;
+  onClose: () => void;
+  onSuccess?: (data: any) => void;
+};
+function NotificationModal({ open, onClose, onSuccess }: Props) {
+  const groupId = useSelector(getGroupOwnerShip) ?? "";
+  const user = useSelector((s: RootState) => s.auth.user);
+
+  const [loading, setLoading] = useState(false);
+
+  // Pagination + Search
+  const [page, setPage] = useState(1);
+  const [limit] = useState(10);
+  const [search, setSearch] = useState("");
+
+  const { data, isLoading: loadingSections } = useSections(groupId, {
+    page,
+    limit,
+    search,
+    userId: user?.user?._id,
+  });
+
+  const sections = data?.data || [];
+  const pagination = data?.pagination || { total: 0, page: 1, totalPages: 1 };
+
+  const [form, setForm] = useState<NotificationForm>({
+    userId: user?.user._id || "",
+    groupId,
+    sectionId: [],
+    text: "",
+  });
+
+  const toggleSection = (id: string) => {
+    setForm((prev) => {
+      const exists = prev.sectionId.includes(id);
+      return {
+        ...prev,
+        sectionId: exists
+          ? prev.sectionId.filter((x) => x !== id)
+          : [...prev.sectionId, id],
+      };
+    });
+  };
+
+  const handleSubmit = async () => {
+    try {
+      setLoading(true);
+
+      const res = await axios.post(`${BASE_URL}/api/campus/notification/create`, form);
+
+      if (res.data.success) {
+        onSuccess?.(res.data.notification);
+        onClose();
+
+        setForm({
+          userId: user?.user._id || "",
+          groupId,
+          sectionId: [],
+          text: "",
+        });
+      }
+    } catch (err) {
+      alert("Failed to add notification");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle>Create Notification</DialogTitle>
+
+      <DialogContent dividers>
+        <Box display="flex" flexDirection="column" gap={2}>
+
+          {/* Notification Text */}
+          <TextField
+            label="Notification Text"
+            value={form.text}
+            onChange={(e) =>
+              setForm((prev) => ({ ...prev, text: e.target.value }))
+            }
+            multiline
+            minRows={2}
+            fullWidth
+          />
+
+          {/* Search */}
+          <TextField
+            label="Search Sections"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            fullWidth
+          />
+
+          {/* SECTION CHECKBOX LIST */}
+          <Box
+            sx={{
+              border: "1px solid #e5e5e5",
+              borderRadius: 1,
+              p: 1,
+              maxHeight: 270,
+              overflowY: "auto",
+            }}
+          >
+            {loadingSections ? (
+              <Typography textAlign="center" p={2}>
+                Loading...
+              </Typography>
+            ) : sections.length === 0 ? (
+              <Typography textAlign="center" p={2}>
+                No sections found
+              </Typography>
+            ) : (
+              sections.map((section: any) => (
+                <Box
+                  key={section._id}
+                  display="flex"
+                  alignItems="center"
+                  gap={1}
+                  p={1}
+                >
+                  <Checkbox
+                    checked={form.sectionId.includes(section._id)}
+                    onChange={() => toggleSection(section._id)}
+                  />
+                  <Typography>{section.name}</Typography>
+                </Box>
+              ))
+            )}
+          </Box>
+
+          {/* Pagination */}
+          <Box display="flex" justifyContent="center" mt={1}>
+            <Pagination
+              count={pagination.totalPages}
+              page={page}
+              onChange={(_, value) => setPage(value)}
+              color="primary"
+            />
+          </Box>
+        </Box>
+      </DialogContent>
+
+      <DialogActions>
+        <Button onClick={onClose} disabled={loading}>
+          Cancel
+        </Button>
+        <Button variant="contained" onClick={handleSubmit} disabled={loading}>
+          {loading ? <CircularProgress size={22} /> : "Create"}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+
 /* ------------------------------- SuperAdminDashboard ------------------------------ */
 const SuperAdminDashboard: React.FC = () => {
-  const [message, setMessage] = useState<string>('')
-  const [modalOpen, setModalOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('') // 🔍
-  const logout = useLogout()
-  const user = useSelector((s: RootState) => s.auth.user?.user)
-  const groudId = useSelector(getGroupOwnerShip)
-  const userId = user?.role === 'campus-admin' ? user._id : undefined
-  const { enqueueSnackbar } = useSnackbar()
+  const [message, setMessage] = useState<string>("");
+  const [modalOpen, setModalOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [limit] = useState(50); // static limit
 
-  const { data, error, isLoading, refetch } = useSections(groudId ?? '', userId)
+  const logout = useLogout();
+  const user = useSelector((s: RootState) => s.auth.user);
+  const groudId = useSelector(getGroupOwnerShip);
+  const userId = user?.user?.role === "campus-admin" ? user?.user?._id : undefined;
+  const { enqueueSnackbar } = useSnackbar();
+  const [brodcast, setBrodcast] = useState(false);
 
-  if (error) return <>{JSON.stringify(error)}</>
+  // 🚀 Pagination-enabled hook
+  const { data, error, isLoading, refetch } = useSections(groudId ?? "", {
+    page,
+    limit,
+    search: searchQuery,
+    userId,
+  });
+
+  if (error) return <>{JSON.stringify(error)}</>;
+
+  const sections = data?.data || [];
+  const pagination = data?.pagination;
 
   const handleCreateSection = async (name: string, logoFile?: File) => {
-    if (!groudId) return setMessage('No group assigned')
+    if (!groudId) return setMessage("No group assigned");
     try {
-      setLoading(true)
-      const formData = new FormData()
-      formData.append('name', name)
-      formData.append('groupId', groudId)
-      if (logoFile) formData.append('logo', logoFile)
+      setLoading(true);
 
-      await axios.post(BASE_URL + '/api/campus/create/section', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      const formData = new FormData();
+      formData.append("name", name);
+      formData.append("groupId", groudId);
+      if (logoFile) formData.append("logo", logoFile);
+
+      await axios.post(BASE_URL + "/api/campus/create/section", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
         withCredentials: true,
-      })
+      });
 
-      enqueueSnackbar('Section created successfully!', { variant: 'success' })
-      setModalOpen(false)
-      await refetch()
+      enqueueSnackbar("Section created successfully!", { variant: "success" });
+      setModalOpen(false);
+      await refetch();
     } catch (err: any) {
-      console.error(err)
-      setMessage(err.response?.data?.message || 'Error creating section')
+      setMessage(err.response?.data?.message || "Error creating section");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleDelete = async (id: string) => {
     try {
-      setLoading(true)
-      await axios.post(BASE_URL + '/api/campus/delete/section/' + id, {}, {
-        withCredentials: true,
-      })
-      enqueueSnackbar('Section deleted successfully!', { variant: 'success' })
-      await refetch()
-    } catch (err: any) {
-      console.error(err)
-      setMessage(err.response?.data?.message || 'Error deleting section')
-    } finally {
-      setLoading(false)
-    }
-  }
+      setLoading(true);
 
-  const filteredSections = useMemo(() => {
-    if (!data?.data) return []
-    return data.data.filter((section: any) =>
-      section.name.toLowerCase().includes(searchQuery.toLowerCase())
-    )
-  }, [data, searchQuery])
+      await axios.post(BASE_URL + "/api/campus/delete/section/" + id, {}, { withCredentials: true });
+
+      enqueueSnackbar("Section deleted successfully!", { variant: "success" });
+      await refetch();
+    } catch (err: any) {
+      setMessage(err.response?.data?.message || "Error deleting section");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <>
-      {/* Global Backdrop Loader */}
+      {/* Global Loader */}
       <Backdrop
         open={loading}
         sx={{
-          color: '#fff',
-          zIndex: theme => theme.zIndex.drawer + 1,
-          display: 'flex',
-          flexDirection: 'column',
+          color: "#fff",
+          zIndex: (theme) => theme.zIndex.drawer + 1,
+          display: "flex",
+          flexDirection: "column",
           gap: 2,
         }}
       >
         <CircularProgress color="inherit" />
-        <Typography variant="body2" sx={{ mt: 1 }}>
-          Please wait... Processing your request
-        </Typography>
+        <Typography variant="body2">Please wait... Processing your request</Typography>
       </Backdrop>
 
       {/* Header */}
       <header className="p-2 border-b border-b-[#e1e1e1] flex flex-wrap gap-3 items-center justify-between px-5">
         <div className="flex items-center gap-3">
           <img src={LOGO} className="h-10" alt="Logo" />
+
           <TextField
             placeholder="Search sections..."
             size="small"
             value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setPage(1); // reset to page 1 on search
+            }}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -383,51 +591,51 @@ const SuperAdminDashboard: React.FC = () => {
             sx={{ width: 240 }}
           />
         </div>
+
         <div className="flex gap-4 items-center">
-          
-          <Button
-            onClick={() => setModalOpen(true)}
-            sx={{
-              width: 180,
-              cursor:"none",
-              fontSize: 10,
-              height: 36,
-              // background: 'linear-gradient(90deg, #007BFF 0%, #004A99 100%)',
-              border:"1px solid #e1e1e1",
-              color: '#fff',
-            }}
-            disabled={true}
-          >
-            Master Data 
-          </Button>
           <Button
             onClick={() => setModalOpen(true)}
             sx={{
               width: 180,
               fontSize: 10,
               height: 36,
-              background: 'linear-gradient(90deg, #007BFF 0%, #004A99 100%)',
-              color: '#fff',
+              background: "linear-gradient(90deg, #007BFF 0%, #004A99 100%)",
+              color: "#fff",
             }}
           >
             Create New Section <Add />
           </Button>
-          <Tooltip title="Logout" arrow>
-            <IconButton onClick={logout} size="small" sx={{ color: '#f44336' }}>
-              <Logout sx={{ cursor: 'pointer' }} />
-            </IconButton>
-          </Tooltip>
+
+          <Button
+            onClick={() => setBrodcast(true)}
+            sx={{
+              width: "max-content",
+              fontSize: 10,
+              padding: "6px 12px",
+              height: 36,
+              background: "linear-gradient(90deg, #007BFF 0%, #004A99 100%)",
+              color: "#fff",
+            }}
+          >
+            Notify <Add />
+          </Button>
+
+          <AccountMenu
+            onLogout={logout}
+            name={user?.user?.name || ""}
+            email={user?.user?.email || ""}
+            profilePic={user?.user?.avatar || null}
+          />
         </div>
       </header>
 
-      {/* Message */}
       {message && (
         <Typography color="success.main" className="px-5 mt-2">
           {message}
         </Typography>
       )}
 
-      {/* Section Grid */}
+      {/* Paginated Section Grid */}
       {isLoading ? (
         <Box className="grid grid-cols-1 p-5 mt-4 md:grid-cols-3 lg:grid-cols-5 gap-6">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -438,35 +646,50 @@ const SuperAdminDashboard: React.FC = () => {
             </Box>
           ))}
         </Box>
-      ) : filteredSections.length ? (
-        <div className="grid grid-cols-1 p-5 mt-4 md:grid-cols-3 lg:grid-cols-5 gap-6">
-          {filteredSections.map((section: any) => (
-            <SectionCard key={section._id} section={section} onDelete={handleDelete} />
-          ))}
-        </div>
+      ) : sections.length ? (
+        <>
+          <div className="grid grid-cols-1 p-5 mt-4 md:grid-cols-3 lg:grid-cols-5 gap-6">
+            {sections.map((section: any) => (
+              <SectionCard key={section._id} section={section} onDelete={handleDelete} />
+            ))}
+          </div>
+
+          {/* Pagination */}
+          <Box className="flex justify-center my-5">
+            <Pagination
+              count={pagination?.totalPages || 1}
+              page={page}
+              onChange={(_, val) => setPage(val)}
+              color="primary"
+            />
+          </Box>
+        </>
       ) : (
         <div className="p-6 text-center text-gray-500 border border-dashed border-gray-300 rounded-lg">
           <Typography variant="body1" gutterBottom>
-            {searchQuery
-              ? `No results found for "${searchQuery}"`
-              : 'Admin, no sections have been created yet.'}
+            {searchQuery ? `No results found for "${searchQuery}"` : "No sections created yet."}
           </Typography>
-          {!searchQuery && (
-            <Typography variant="body2">
-              Click "Create New Section" to get started.
-            </Typography>
-          )}
         </div>
       )}
 
-      {/* Create Section Modal */}
+      {/* Modals */}
       <CreateSectionModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         onCreate={handleCreateSection}
       />
+
+      <NotificationModal
+        open={brodcast}
+        onClose={() => setBrodcast(false)}
+        onSuccess={async () => {
+          enqueueSnackbar("Notification created successfully!", { variant: "success" });
+          setBrodcast(false);
+        }}
+      />
     </>
-  )
-}
+  );
+};
+
 
 export default SuperAdminDashboard

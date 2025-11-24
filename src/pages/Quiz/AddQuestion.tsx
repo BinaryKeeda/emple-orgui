@@ -1,15 +1,16 @@
-import { useState, type ChangeEvent,type FormEvent } from 'react'
+import { useState, type ChangeEvent, type FormEvent } from 'react'
 import {
   Button,
   TextField,
   MenuItem,
   CircularProgress,
-  IconButton
+  IconButton,
 } from '@mui/material'
 import axios from 'axios'
 import { UploadFile, Close } from '@mui/icons-material'
 import { useSnackbar } from 'notistack'
 import { BASE_URL } from '../../config/config'
+import DeleteConfirmBox from '../../Layout/DeleteConfirmBox'
 
 // -------------------- Types --------------------
 interface Option {
@@ -63,6 +64,7 @@ export default function AddQuestion({
   const [formData, setFormData] = useState<FormState>(initialFormState)
   const [preview, setPreview] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(false)
+  const [confirmOpen, setConfirmOpen] = useState(false) // <-- Confirmation dialog
 
   // -------------------- Handlers --------------------
   const changeHandler = (
@@ -78,7 +80,7 @@ export default function AddQuestion({
         ...prev,
         [name]:
           name === 'marks' || name === 'negative'
-            ? value // keep as string for live typing
+            ? value
             : value
       }))
     }
@@ -108,22 +110,25 @@ export default function AddQuestion({
   // -------------------- Submit --------------------
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    console.log(formData)
-    if (  
-      !formData.question ||
-      !formData.category ||
-      parseFloat(formData.marks) > maxMarks
-    ) {
+
+    if (!formData.question || !formData.category) {
       enqueueSnackbar('Please fill all required fields correctly!', {
         variant: 'warning'
       })
       return
     }
 
+    if (parseFloat(formData.marks) > maxMarks) {
+      enqueueSnackbar('Mark exceeding allowed limit!', { variant: 'warning' })
+      return
+    }
+
     setLoading(true)
     const form = new FormData()
 
-    if (formData.image instanceof File) form.append('image', formData.image)
+    if (formData.image instanceof File) {
+      form.append('image', formData.image)
+    }
 
     form.append(
       'data',
@@ -139,7 +144,6 @@ export default function AddQuestion({
     )
 
     try {
-      console.log("data")
       await axios.post(`${BASE_URL}/api/admin/quiz/add/question`, form, {
         headers: { 'Content-Type': 'multipart/form-data' },
         withCredentials: true
@@ -158,7 +162,11 @@ export default function AddQuestion({
 
   // -------------------- JSX --------------------
   return (
-    <form style={{display:"flex",  flexDirection:"column" , gap:"1rem"}} onSubmit={handleSubmit} className='space-y-4 bg-white p-5'>
+    <form
+      style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
+      onSubmit={handleSubmit}
+      className='space-y-4 bg-white p-5'
+    >
       <TextField
         minRows={2}
         size='small'
@@ -233,6 +241,7 @@ export default function AddQuestion({
                 onChange={e => handleOptionChange(index, e.target.value)}
                 required
               />
+
               {formData.category === 'MCQ' ? (
                 <input
                   type='radio'
@@ -253,6 +262,7 @@ export default function AddQuestion({
         </div>
       )}
 
+      {/* IMAGE UPLOAD */}
       <div className='flex items-center gap-2'>
         <Button component='label' variant='outlined' startIcon={<UploadFile />}>
           Upload Image
@@ -265,22 +275,28 @@ export default function AddQuestion({
               src={preview}
               alt='Preview'
               className='h-20 object-contain cursor-pointer'
-              onClick={() =>
-                document.getElementById('image-full')?.requestFullscreen()
-              }
             />
-            <IconButton size='small' onClick={handleImageRemove}>
+
+            <IconButton size='small' onClick={() => setConfirmOpen(true)}>
               <Close />
             </IconButton>
           </div>
         )}
-
-        <img src={preview} id='image-full' className='hidden' alt='fullscreen' />
       </div>
 
       <Button type='submit' variant='contained' disabled={loading}>
         {loading ? <CircularProgress size={20} /> : 'Add Question'}
       </Button>
+      <DeleteConfirmBox
+        open={confirmOpen}
+        title='Remove Image?'
+        message='This will permanently remove the selected image.'
+        onCancel={() => setConfirmOpen(false)}
+        onConfirm={() => {
+          handleImageRemove()
+          setConfirmOpen(false)
+        }}
+      />
     </form>
   )
 }

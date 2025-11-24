@@ -13,6 +13,7 @@ import {
 import CloseIcon from '@mui/icons-material/Close'
 import axios from 'axios'
 import { BASE_URL } from '../../config/config'
+import { useQueryClient } from '@tanstack/react-query'
 
 type AddExamModalProps = {
   sectionId: string
@@ -38,10 +39,9 @@ const AddExamModal: React.FC<AddExamModalProps> = ({
     sectionId,
     visibility: 'public',
   })
-
+  const queryClient = useQueryClient()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [successMsg, setSuccessMsg] = useState<string | null>(null)
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -54,22 +54,18 @@ const AddExamModal: React.FC<AddExamModalProps> = ({
     e.preventDefault()
     setLoading(true)
     setError(null)
-    setSuccessMsg(null)
 
     try {
       const res = await axios.post(`${BASE_URL}/api/exam/create`, formData)
       if (res.data.success) {
-        setSuccessMsg('Exam created successfully!')
         onSuccess?.()
         setFormData({
           name: '',
           sectionId,
           visibility: 'public',
         })
-        setTimeout(() => {
-          setSuccessMsg(null)
-          onClose()
-        }, 1000)
+        queryClient.invalidateQueries({ queryKey: ['exam'] })
+        onClose()
       }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Error creating exam')
@@ -128,16 +124,11 @@ const AddExamModal: React.FC<AddExamModalProps> = ({
               fullWidth
             />
 
-          
+
 
             {error && (
               <Typography color="error" variant="body2">
                 {error}
-              </Typography>
-            )}
-            {successMsg && (
-              <Typography color="success.main" variant="body2">
-                {successMsg}
               </Typography>
             )}
 

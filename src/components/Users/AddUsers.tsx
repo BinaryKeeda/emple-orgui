@@ -84,11 +84,7 @@ export default function AddUsers({ open, setOpen }: AddUsersProps) {
     }
 
     setSubmitting(true); // ✅ show loader
-    // setSnackbar({
-    //   open: true,
-    //   message: "Processing invites...",
-    //   severity: "info",
-    // });
+
     enqueueSnackbar("Processing invites...", {
       variant: "info"
     })

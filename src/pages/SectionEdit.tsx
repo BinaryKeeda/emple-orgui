@@ -202,8 +202,8 @@ const SectionPage: React.FC = () => {
         onClose={() => setTestOpen(false)}
         sectionId={id as string}
       />
-      <AddQuestionBank open={questionBank} onClose={() => setQuestionBank(false)}  />
-       <AddExamForm sectionId={id as string} open={examOpen} onClose={() => setExamOpen(false)} />
+      <AddQuestionBank open={questionBank} onClose={() => setQuestionBank(false)} />
+      <AddExamForm sectionId={id as string} open={examOpen} onClose={() => setExamOpen(false)} />
       {/* Manage Users */}
       <StudentsTable />
     </div>

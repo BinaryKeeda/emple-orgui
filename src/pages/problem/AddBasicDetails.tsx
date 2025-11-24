@@ -5,21 +5,22 @@ import axios from "axios";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
 import type { Problem } from "./hooks/useGetProblem";
 import { BASE_URL } from "../../config/config";
+import { useSnackbar } from "notistack";
 
 interface AddBasicDetailsProps {
   setActiveStep: React.Dispatch<React.SetStateAction<number>>;
   problemId?: string;
   problem: Problem | null;
 }
-
 const AddBasicDetails: React.FC<AddBasicDetailsProps> = ({
   problem,
   setActiveStep,
   problemId,
 }) => {
+  console.log(setActiveStep)
   const [title, setTitle] = useState<string>("");
   const [description, setDescription] = useState<string>("");
-
+  const { enqueueSnackbar } = useSnackbar();
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -37,11 +38,12 @@ const AddBasicDetails: React.FC<AddBasicDetailsProps> = ({
         description,
         problemId
       };
-      const res = await axios.post(`${BASE_URL}/api/campus/problem/add/basicinfo`, payload , {withCredentials:true});
+      const res = await axios.post(`${BASE_URL}/api/campus/problem/add/basicinfo`, payload, { withCredentials: true });
       return res.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["problemDetails", problemId] });
+      enqueueSnackbar({ message: "Problem details saved successfully!", variant: 'success' });
     },
   });
 
@@ -54,8 +56,8 @@ const AddBasicDetails: React.FC<AddBasicDetailsProps> = ({
       <Box
         component="form"
         sx={{
-          display: "grid",
-          gridTemplateColumns: "repeat(2, 1fr)",
+          display: "flex",
+          justifyContent:"space-between",
           gap: 3,
         }}
       >
@@ -63,9 +65,22 @@ const AddBasicDetails: React.FC<AddBasicDetailsProps> = ({
           size="small"
           label="Problem Title"
           required
+          fullWidth
           value={title}
           onChange={(e) => setTitle(e.target.value)}
         />
+
+        <Button
+          variant="contained"
+          color="primary"
+          sx={{width:"max-content"}}
+          onClick={() => updateProblem.mutate()}
+          disabled={updateProblem.isPending}
+        >
+          {updateProblem.isPending ? "Saving..." : "Save"}
+        </Button>
+
+
       </Box>
 
       <Box sx={{ mt: 4 }}>
@@ -75,35 +90,11 @@ const AddBasicDetails: React.FC<AddBasicDetailsProps> = ({
         <MDEditor
           value={description}
           onChange={(val) => setDescription(val || "")}
-          height={300}
+          height={550}
         />
       </Box>
 
-      <Box
-        sx={{
-          display: "flex",
-          padding: "30px 0",
-          gap: 2,
-          justifyContent: "end",
-        }}
-      >
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={() => updateProblem.mutate()}
-          disabled={updateProblem.isPending}
-        >
-          {updateProblem.isPending ? "Saving..." : "Save"}
-        </Button>
 
-        <Button
-          onClick={() => setActiveStep((prev) => prev + 1)}
-          variant="contained"
-          color="secondary"
-        >
-          Next
-        </Button>
-      </Box>
     </>
   );
 };

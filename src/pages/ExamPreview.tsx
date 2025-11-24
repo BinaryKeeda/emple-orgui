@@ -5,7 +5,7 @@ import { BASE_URL } from "../config/config";
 import { useQuery } from "@tanstack/react-query";
 import { Button, CircularProgress, IconButton } from "@mui/material";
 import { useSnackbar } from "notistack";
-import { CloudDownload, Visibility } from "@mui/icons-material";
+import { CloudDownload, Delete, Visibility } from "@mui/icons-material";
 import { Link } from "react-router-dom";
 
 interface User {
@@ -168,6 +168,7 @@ const ExamPreview: React.FC = () => {
               <th className="px-4 py-3 border-b">Email</th>
               <th className="px-4 py-3 border-b">Attempt</th>
               <th className="px-4 py-3 border-b">Submitted At</th>
+              <th className="px-4 py-3 border-b">Delete</th>
             </tr>
           </thead>
           <tbody>
@@ -177,11 +178,20 @@ const ExamPreview: React.FC = () => {
                 <td className="px-4 py-4 border-b">{s?.userId?.email}</td>
                 <td className="px-4 py-4 border-b">
                   <Link to={s._id}>
-                    <IconButton><Visibility /></IconButton>
+                    <IconButton  ><Visibility /></IconButton>
                   </Link>
                 </td>
                 <td className="px-4 py-4 border-b">
                   {new Date(s.updatedAt).toLocaleString()}
+                </td>
+                <td className="px-4 py-4 border-b">
+                  <IconButton onClick={async () => {
+                    await axios.delete(`${BASE_URL}/api/campus/submission/${s._id}`, { withCredentials: true });
+                    enqueueSnackbar("Submission deleted successfully!", { variant: "success" });
+                    refetch();
+                  }} color="error">
+                    <Delete sx={{ fontSize: 19 }} />
+                  </IconButton>
                 </td>
               </tr>
             ))}

@@ -21,11 +21,10 @@ import {
   DialogContentText,
   DialogTitle,
   Button,
-  Snackbar,
-  Alert,
 } from "@mui/material";
 import { Search, Edit, Delete } from "@mui/icons-material";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useSnackbar } from "notistack";
 
 // -------------------- Interfaces --------------------
 interface Exam {
@@ -82,11 +81,6 @@ const ExamList: React.FC = () => {
   const [openDialog, setOpenDialog] = useState(false);
   const [testToDelete, setTestToDelete] = useState<Exam | null>(null);
 
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "success" as "success" | "error",
-  });
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -124,32 +118,25 @@ const ExamList: React.FC = () => {
     setTestToDelete(test);
     setOpenDialog(true);
   };
+  const {enqueueSnackbar} = useSnackbar();
 
   const handleDelete = async () => {
     if (!testToDelete) return;
 
     try {
-      await axios.delete(`${BASE_URL}/api/campus/test/delete/${testToDelete._id}`, {
+      await axios.delete(`${BASE_URL}/api/campus/questionbank/delete/${testToDelete._id}`, {
         withCredentials: true,
       });
 
-      setSnackbar({
-        open: true,
-        message: "Test deleted successfully",
-        severity: "success",
-      });
+
+      enqueueSnackbar("Test deleted successfully", {variant:"success"});
 
       // Invalidate cached data so table refreshes automatically
       queryClient.invalidateQueries({
         queryKey: ["questions", id, page, rowsPerPage, debouncedSearch],
       });
-    } catch (err) {
-      console.error(err);
-      setSnackbar({
-        open: true,
-        message: "Failed to delete test",
-        severity: "error",
-      });
+    } catch (err: Error | any) {
+      enqueueSnackbar(err?.response?.data?.message || "Failed to delete test", {variant:"error"});
     } finally {
       setOpenDialog(false);
       setTestToDelete(null);
@@ -271,21 +258,7 @@ const ExamList: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Snackbar Notification */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-      >
-        <Alert
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-          severity={snackbar.severity}
-          sx={{ width: "100%" }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+    
     </Paper>
   );
 };

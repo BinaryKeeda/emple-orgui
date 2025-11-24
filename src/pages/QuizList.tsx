@@ -21,11 +21,10 @@ import {
   DialogContentText,
   DialogTitle,
   Button,
-  Snackbar,
-  Alert,
 } from '@mui/material'
 import { Search, Visibility, Edit, Delete } from '@mui/icons-material'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useSnackbar } from 'notistack'
 
 interface Quiz {
   _id: string
@@ -84,12 +83,9 @@ const QuizEdit: React.FC = () => {
   const [openDialog, setOpenDialog] = useState(false)
   const [quizToDelete, setQuizToDelete] = useState<Quiz | null>(null)
 
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: '',
-    severity: 'success' as 'success' | 'error',
-  })
 
+
+  const { enqueueSnackbar } = useSnackbar();
   const queryClient = useQueryClient()
 
   // Debounce search
@@ -136,21 +132,14 @@ const QuizEdit: React.FC = () => {
         withCredentials: true,
       })
 
-      setSnackbar({
-        open: true,
-        message: 'Quiz deleted successfully',
-        severity: 'success',
-      })
 
+
+      enqueueSnackbar("Quiz deleted successfully", { variant: 'success' });
       queryClient.invalidateQueries({
         queryKey: ['quizzes', id, page, rowsPerPage, debouncedSearch],
       })
     } catch (err) {
-      setSnackbar({
-        open: true,
-        message: 'Failed to delete quiz',
-        severity: 'error',
-      })
+      enqueueSnackbar("Failed to delete quiz", { variant: 'error' });
     } finally {
       setOpenDialog(false)
       setQuizToDelete(null)
@@ -290,21 +279,7 @@ const QuizEdit: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Snackbar */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-          severity={snackbar.severity}
-          sx={{ width: '100%' }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+      
     </Paper>
   )
 }

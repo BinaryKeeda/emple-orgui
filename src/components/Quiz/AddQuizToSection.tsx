@@ -3,6 +3,8 @@ import React, { useState } from "react";
 import { Modal, Box, Typography, TextField, Button, MenuItem } from "@mui/material";
 import axios from "axios";
 import { BASE_URL } from "../../config/config";
+import { useQueryClient } from "@tanstack/react-query";
+import { useSnackbar } from "notistack";
 
 interface AddQuizToSectionProps {
   open: boolean;
@@ -31,7 +33,8 @@ const AddQuizToSection: React.FC<AddQuizToSectionProps> = ({ open, onClose, sect
   const [message, setMessage] = useState("");
   const [isError, setIsError] = useState(false);
   const [loading, setLoading] = useState(false);
-
+  const queryClient = useQueryClient();
+  const { enqueueSnackbar } = useSnackbar();
   const handleCreateQuiz = async () => {
     if (!title.trim()) {
       setMessage("Quiz title is required");
@@ -61,9 +64,12 @@ const AddQuizToSection: React.FC<AddQuizToSectionProps> = ({ open, onClose, sect
       );
 
       if (res.data.success) {
-        setMessage("Quiz created successfully!");
+        // setMessage("Quiz created successfully!");
+        queryClient.invalidateQueries({ queryKey: ["quizzes", sectionId] });
+        enqueueSnackbar("Quiz created successfully!", { variant: "success" });
         setIsError(false);
         // Reset form
+        onClose()
         setTitle("");
         setMarks(0);
         setDuration(30);
@@ -138,8 +144,10 @@ const AddQuizToSection: React.FC<AddQuizToSectionProps> = ({ open, onClose, sect
           </Box>
 
           <Button
-          sx={{backgroundColor: '#FF5C01', // Deep Orange
-            color: '#ffffff',}}
+            sx={{
+              backgroundColor: '#FF5C01', // Deep Orange
+              color: '#ffffff',
+            }}
             variant="contained"
             color="primary"
             onClick={handleCreateQuiz}

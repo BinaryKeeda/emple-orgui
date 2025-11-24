@@ -12,6 +12,7 @@ import {
 import axios from "axios";
 import { BASE_URL } from "../../config/config";
 import { useParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 
 const categories = ["Core", "Aptitude", "Excel", "Miscellaneous"];
 
@@ -30,7 +31,7 @@ const CreateBankModal: React.FC<CreateBankModalProps> = ({
   const [name, setName] = useState("");
   const [category, setCategory] = useState("");
   const [loading, setLoading] = useState(false);
-
+  const queryClient = useQueryClient();
   const handleCreate = async () => {
     if (!name || !category) {
       alert("Please fill in all fields");
@@ -47,6 +48,7 @@ const CreateBankModal: React.FC<CreateBankModalProps> = ({
    
       setName("");
       setCategory("");
+    queryClient.invalidateQueries({queryKey:["questions"]});
       if (onSuccess) onSuccess();
       onClose();
     } catch (error: any) {

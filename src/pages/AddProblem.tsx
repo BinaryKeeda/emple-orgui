@@ -17,7 +17,7 @@ export default function QuestionEditor() {
         <Box sx={{ display: "flex", height: "calc(100vh - 66px)" }}>
             <Sidebar activeStep={activeStep} setActiveStep={setActiveStep} />
 
-            <Box sx={{ flexGrow: 1, px: 4 }}>
+            <Box sx={{ flex:1, px: 4 }}>
          
                 {
                     activeStep == 0 &&
