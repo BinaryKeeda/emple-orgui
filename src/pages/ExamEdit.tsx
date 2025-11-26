@@ -29,6 +29,7 @@ import {
   Pagination,
   Checkbox,
   Radio,
+  Select,
 } from "@mui/material";
 import { useSnackbar } from "notistack";
 import {
@@ -571,7 +572,7 @@ export const AddQuestionPool = ({
   onClose: () => void;
   data: any;
   examId: string;
-  selectedQuestionId:string
+  selectedQuestionId: string
 }) => {
   const { id } = useParams();
   const queryClient = useQueryClient();
@@ -699,8 +700,8 @@ export const AddQuestionPool = ({
           {isPending
             ? "Saving..."
             : data.questionPool
-            ? "Update Pool"
-            : "Add Pool"}
+              ? "Update Pool"
+              : "Add Pool"}
         </Button>
       </DialogActions>
     </Dialog>
@@ -728,6 +729,7 @@ export const AddProblemPool = ({
   const [selectedProblems, setSelectedProblems] = useState<string[]>(selectedProbIds);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [difficulty, setDifficulty] = useState<string>("all");
   const limit = 10;
 
   useEffect(() => {
@@ -737,10 +739,10 @@ export const AddProblemPool = ({
   }, [open, selectedProbIds]);
 
   const { data: problemData, isLoading } = useQuery({
-    queryKey: ["problems", search, page],
+    queryKey: ["problems", search, page, difficulty],
     queryFn: async () => {
       const res = await axios.get(
-        `${BASE_URL}/api/exam/problems?limit=${limit}&page=${page}&search=${search}&isPublic=true`
+        `${BASE_URL}/api/exam/problems?limit=${limit}&page=${page}&search=${search}&isPublic=true&difficulty=${difficulty}`
       );
       return res.data;
     },
@@ -789,6 +791,12 @@ export const AddProblemPool = ({
               setPage(1);
             }}
           />
+          <Select onChange={(e) => { setDifficulty(e.target.value) }} value={difficulty} title="Difficulty" size="small">
+            <MenuItem value="all">All</MenuItem>
+            <MenuItem value="Easy">Easy</MenuItem>
+            <MenuItem value="Medium">Medium</MenuItem>
+            <MenuItem value="Hard">Hard</MenuItem>
+          </Select>
         </Box>
 
         {/* Problems List */}
@@ -812,7 +820,7 @@ export const AddProblemPool = ({
                         secondary={`Difficulty: ${problem.difficulty || "N/A"} | Tags: ${problem.tags?.join(", ") || "None"
                           }`}
                       />
-                      <Checkbox  checked={selectedProblems.includes(problem._id)} />
+                      <Checkbox checked={selectedProblems.includes(problem._id)} />
                     </ListItemButton>
                   ))}
                 </List>

@@ -36,6 +36,7 @@ export default function AddMeta({ problemId }: AddMetaProps) {
     constraints: [""],
     timeLimit: 1000,
     memoryLimit: 256000,
+    difficulty: "",
     hints: "",
     isPublic: false,
     languagesSupported: ["python", "cpp", "java", "c"],
@@ -56,6 +57,7 @@ export default function AddMeta({ problemId }: AddMetaProps) {
         problem.languagesSupported?.length > 0
           ? problem.languagesSupported
           : ["python", "cpp", "java", "c"],
+      difficulty: problem.difficulty || "",
     });
   }, [problem]);
 
@@ -229,6 +231,16 @@ export default function AddMeta({ problemId }: AddMetaProps) {
               placeholder="e.g. Try binary search, Optimize loops"
             />
 
+            <FormControl>
+              <InputLabel> Difficulty Level</InputLabel>
+              <Select label="Difficulty Level" name="difficultyLevel" value={meta['difficulty'] || ''} onChange={(e) => {
+                setMeta((prev) => ({ ...prev, difficulty: e.target.value }));
+              }} fullWidth size="small">
+                <MenuItem value="Easy">Easy</MenuItem>
+                <MenuItem value="Medium">Medium</MenuItem>
+                <MenuItem value="Hard">Hard</MenuItem>
+              </Select>
+            </FormControl>
             <FormControl fullWidth size="small" error={!!errors.languagesSupported}>
               <InputLabel>Languages Supported</InputLabel>
               <Select

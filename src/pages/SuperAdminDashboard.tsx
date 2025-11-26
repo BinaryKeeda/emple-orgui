@@ -489,7 +489,7 @@ const SuperAdminDashboard: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
-  const [limit] = useState(50); // static limit
+  const [limit] = useState(20); // static limit
 
   const logout = useLogout();
   const user = useSelector((s: RootState) => s.auth.user);

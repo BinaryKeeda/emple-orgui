@@ -151,7 +151,7 @@ const StudentsTable: React.FC = () => {
         {user?.user.role == "campus-superadmin" &&
           <FormControl size='small' sx={{ minWidth: 160 }}>
             <Select value={status} onChange={(e) => setStatus(e.target.value)}>
-              <MenuItem value='all'>All Statuses</MenuItem>
+              <MenuItem value='all'>All</MenuItem>
               <MenuItem value='member'>Member</MenuItem>
               <MenuItem value='pending'>Pending</MenuItem>
               <MenuItem value='admin'>Admin</MenuItem>
