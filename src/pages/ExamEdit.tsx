@@ -35,9 +35,9 @@ import { useSnackbar } from "notistack";
 import {
   Delete,
   Edit,
-  Refresh,
 } from "@mui/icons-material";
 import { BASE_URL } from "../config/config";
+import UserDetailFieldModal from "./UserDetailsModal";
 
 // ------------------------------------------------
 // MAIN EXAM EDIT PAGE
@@ -51,7 +51,8 @@ export default function ExamEdit() {
     return res.data.data;
   };
 
-  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
+  const [userDetails, setUserDetails] = useState<boolean>(false);
+  const { data, isLoading, isError, error, isFetching } = useQuery({
     queryKey: ["exam", examId],
     queryFn: fetchExam,
     enabled: !!examId,
@@ -79,14 +80,15 @@ export default function ExamEdit() {
         </Typography>
         <Button
           variant="outlined"
-          startIcon={<Refresh />}
-          onClick={() => refetch()}
+          onClick={() => setUserDetails(true)}
           disabled={isFetching}
         >
-          {isFetching ? "Refreshing..." : "Refresh"}
+          User Details
         </Button>
       </Stack>
-
+      {examId &&
+        <UserDetailFieldModal refresh={() => { queryClient.invalidateQueries({queryKey:['exam',examId]})}} examId={examId as string} open={userDetails} onClose={() => { setUserDetails(false) }} userDetails={data.userDetails} />
+      }
       {data && (
         <>
           <ExamMeta examId={examId} data={data} />
