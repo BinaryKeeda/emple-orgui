@@ -5,9 +5,11 @@ const steps = [
   { id: "languages", label: "Languages" },
   { id: "stubs", label: "Constraints" },
   { id: "testcases", label: "Testcases" },
+  { id: "preview" , label: "Preview" }
 ];
 
-export default function Sidebar({ activeStep, setActiveStep }:any) {
+export default function 
+Sidebar({ activeStep, setActiveStep }:any) {
   return (
     <Box
       sx={{

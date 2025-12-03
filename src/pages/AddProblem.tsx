@@ -7,6 +7,7 @@ import AddMetaData from "./problem/AddMeta";
 import AddTestCases from "./problem/AddTestCases";
 import { useParams } from "react-router-dom";
 import { useProblemDetails } from "./problem/hooks/useGetProblem";
+import ProblemPreview from "./ProblemPreview";
 
 
 export default function QuestionEditor() {
@@ -41,6 +42,12 @@ export default function QuestionEditor() {
                     activeStep == 3 &&
                     <>
                         <AddTestCases problemId={problemId} setActiveStep={setActiveStep} />
+                    </>
+                }
+                {
+                    activeStep == 4 &&
+                    <>
+                        <ProblemPreview  />
                     </>
                 }
             </Box>
