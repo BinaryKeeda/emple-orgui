@@ -111,6 +111,8 @@ const ExamMeta = ({ data, examId }: any) => {
   const [formData, setData] = useState({
     name: data.name,
     isAvailable: data.isAvailable,
+    isProtected:data.isProtected ?? false,
+    passcode:data.passcode ?? ""
   });
   const [isSaving, setSaving] = useState(false);
   const { enqueueSnackbar } = useSnackbar();
@@ -181,7 +183,22 @@ const ExamMeta = ({ data, examId }: any) => {
             }
             label="Available"
           />
+          
         </Stack>
+        <Box sx={{display:"flex",mt:"10px", gap:"10px"}}>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={formData.isProtected}
+                onChange={(e) => handleChange("isProtected", e.target.checked)}
+              />
+            }
+            label="Is Protected"
+          />
+          {formData.isProtected && 
+        
+          <TextField value={formData.passcode} onChange={(e) => handleChange('passcode',e.target.value)} size="small" label="Passcode" ></TextField>}
+        </Box>
 
         <Button
           variant="contained"
