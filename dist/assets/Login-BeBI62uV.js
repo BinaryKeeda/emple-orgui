@@ -1,0 +1,1 @@
+import{r as o,B as e,j as t}from"./index-Ba0-5zIE.js";function a(){return o.useEffect(()=>{window.location.href=`${String(e).includes("binarykeeda.com")?"https://login.binarykeeda.com":"http://localhost:5175"}`},[]),t.jsx(t.Fragment,{})}export{a as default};
