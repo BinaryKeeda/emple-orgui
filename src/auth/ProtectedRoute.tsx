@@ -32,7 +32,7 @@ interface RoleBasedRouteProps {
 
 export const RoleBasedRoute: React.FC<RoleBasedRouteProps> = ({ requiredRole }) => {
   const { user } = useSelector((s: RootState) => s.auth)
-
+  
   if (!user) return <Navigate to="/" replace />
 
   // ✅ If role is allowed, render route
