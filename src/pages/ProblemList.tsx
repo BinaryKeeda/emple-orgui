@@ -14,8 +14,12 @@ import {
   IconButton,
   Chip,
   Pagination,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
-import { Edit } from "@mui/icons-material";
+import { Delete, Edit } from "@mui/icons-material";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { BASE_URL } from "../config/config";
@@ -36,6 +40,19 @@ export default function ProblemList() {
   const [totalPages, setTotalPages] = useState(1);
   const navigate = useNavigate();
   const limit = 10;
+
+  // For delete confirmation
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const deleteProblem = async (id: string) => {
+    try {
+      await axios.delete(`${BASE_URL}/api/campus/problem/${id}`);
+      fetchProblems(page);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const fetchProblems = async (pageNumber: number) => {
     try {
@@ -148,6 +165,16 @@ export default function ProblemList() {
                         >
                           <Edit />
                         </IconButton>
+
+                        <IconButton
+                          color="error"
+                          onClick={() => {
+                            setDeleteId(problem._id);
+                            setConfirmOpen(true);
+                          }}
+                        >
+                          <Delete />
+                        </IconButton>
                       </TableCell>
                     </TableRow>
                   ))
@@ -168,6 +195,29 @@ export default function ProblemList() {
           </Box>
         </>
       )}
+
+      {/* DELETE CONFIRMATION DIALOG */}
+      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
+        <DialogTitle>Delete Problem</DialogTitle>
+        <DialogContent>Are you sure you want to delete this problem?</DialogContent>
+
+        <DialogActions>
+          <Button onClick={() => setConfirmOpen(false)}>Cancel</Button>
+
+          <Button
+            color="error"
+            variant="contained"
+            onClick={async () => {
+              if (deleteId) {
+                await deleteProblem(deleteId);
+              }
+              setConfirmOpen(false);
+            }}
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
