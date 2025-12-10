@@ -1,20 +1,28 @@
-import React, { useState } from "react";
-import { useParams } from "react-router-dom";
+import React, { useState, useMemo } from "react";
+import { useParams, Link } from "react-router-dom";
 import axios from "axios";
 import { BASE_URL } from "../config/config";
 import { useQuery } from "@tanstack/react-query";
-import { Button, CircularProgress, IconButton } from "@mui/material";
+import {
+  Box,
+  Button,
+  CircularProgress,
+  IconButton,
+  TextField,
+} from "@mui/material";
 import { useSnackbar } from "notistack";
 import { CloudDownload, Delete, Visibility } from "@mui/icons-material";
-import { Link } from "react-router-dom";
 
+// ---------------------------
+// Interfaces
+// ---------------------------
 interface User {
   name: string;
   email: string;
 }
 interface Submission {
   _id: string;
-  userId: User;
+  user: User;
   score: number;
   attemptNo: number;
   updatedAt: string;
@@ -39,22 +47,17 @@ interface ApiResponse {
 }
 
 // ---------------------------
-// Fetch Function
+// Debounce Hook (prevents double fetch / spam fetch)
 // ---------------------------
-const fetchExamPreview = async ({
-  examId,
-  page,
-}: {
-  examId: string;
-  page: number
-}) => {
-  const res = await axios.get<ApiResponse>(
-    `${BASE_URL}/api/exam/getall/submissions/${examId}?page=${page}&limit=10`,
-    {
-      withCredentials: true,
-    }
-  );
-  return res.data;
+const useDebounce = (value: string, delay = 500) => {
+  const [debounced, setDebounced] = useState(value);
+
+  React.useEffect(() => {
+    const handler = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+
+  return debounced;
 };
 
 // ---------------------------
@@ -66,15 +69,32 @@ const ExamPreview: React.FC = () => {
   const [downloading, setDownloading] = useState(false);
   const { enqueueSnackbar } = useSnackbar();
 
+  const [email, setEmail] = useState("");
+  const debouncedEmail = useDebounce(email, 400); // prevents double fetch
+
+  // ---------------------------
+  // Memoized Fetch Function (prevents double invocation)
+  // ---------------------------
+  const fetchExamPreview = useMemo(
+    () => async () => {
+      const res = await axios.get<ApiResponse>(
+        `${BASE_URL}/api/exam/getall/submissions/${slug}?page=${page}&limit=10&query=${debouncedEmail}`,
+        { withCredentials: true }
+      );
+      return res.data;
+    },
+    [slug, page, debouncedEmail]
+  );
+
+  // ---------------------------
+  // React Query
+  // ---------------------------
   const { data, isLoading, isError, refetch } = useQuery({
-    queryKey: ["examPreview", slug, id, page],
-    queryFn: () =>
-      fetchExamPreview({
-        examId: slug as string,
-        page,
-      }),
-    enabled: !!slug && !!id,
-    staleTime: 1000 * 60 * 5,
+    queryKey: ["examPreview", slug, page, debouncedEmail],
+    queryFn: fetchExamPreview,
+    enabled: !!slug,
+    staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false, // prevents double-fetch
   });
 
   // ---------------------------
@@ -82,6 +102,7 @@ const ExamPreview: React.FC = () => {
   // ---------------------------
   const handleDownloadExcel = async () => {
     if (!slug || !id) return;
+
     setDownloading(true);
     try {
       const response = await axios.get(
@@ -107,7 +128,6 @@ const ExamPreview: React.FC = () => {
 
       enqueueSnackbar("Excel exported successfully!", { variant: "success" });
     } catch (error) {
-      console.error("Error downloading Excel:", error);
       enqueueSnackbar("Failed to export Excel", { variant: "error" });
     } finally {
       setDownloading(false);
@@ -115,10 +135,10 @@ const ExamPreview: React.FC = () => {
   };
 
   // ---------------------------
-  // Render States
+  // Loading and Error States
   // ---------------------------
-  if (isLoading)
-    return <div className="text-center py-10">Loading exam data...</div>;
+  // if (isLoading)
+  //   return <div className="text-center py-10">Loading exam data...</div>;
 
   if (isError)
     return (
@@ -136,6 +156,9 @@ const ExamPreview: React.FC = () => {
   const submissions = data?.submissions ?? [];
   const totalPages = data?.totalPages ?? 1;
 
+  // ---------------------------
+  // UI
+  // ---------------------------
   return (
     <div className="p-6 flex flex-col gap-8">
       {/* Header */}
@@ -159,7 +182,18 @@ const ExamPreview: React.FC = () => {
         </Button>
       </div>
 
-      {/* Submissions Table */}
+      {/* Search */}
+      <TextField
+        value={email}
+        onChange={(e) => {
+          setEmail(e.target.value);
+          setPage(1); // reset pagination when filtering
+        }}
+        label="Search by Email"
+        fullWidth
+      />
+
+      {/* Table */}
       <div className="overflow-x-auto bg-white rounded-xl shadow-md">
         <table className="w-full text-sm text-left border border-gray-200">
           <thead className="bg-gray-50 text-gray-700 text-sm">
@@ -171,35 +205,52 @@ const ExamPreview: React.FC = () => {
               <th className="px-4 py-3 border-b">Delete</th>
             </tr>
           </thead>
-          <tbody>
-            {submissions.map((s) => (
-              <tr key={s._id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-4 py-4 border-b">{s?.userId?.name}</td>
-                <td className="px-4 py-4 border-b">{s?.userId?.email}</td>
-                <td className="px-4 py-4 border-b">
-                  <Link to={s._id}>
-                    <IconButton  ><Visibility /></IconButton>
-                  </Link>
-                </td>
-                <td className="px-4 py-4 border-b">
-                  {new Date(s.updatedAt).toLocaleString()}
-                </td>
-                <td className="px-4 py-4 border-b">
-                  <IconButton onClick={async () => {
-                    await axios.delete(`${BASE_URL}/api/campus/submission/${s._id}`, { withCredentials: true });
-                    enqueueSnackbar("Submission deleted successfully!", { variant: "success" });
-                    refetch();
-                  }} color="error">
-                    <Delete sx={{ fontSize: 19 }} />
-                  </IconButton>
-                </td>
-              </tr>
-            ))}
 
-            {submissions.length === 0 && (
+          <tbody>
+            {!isLoading && submissions.length > 0 ? (
+              submissions.map((s) => (
+                <tr key={s._id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-4 py-4 border-b">{s?.user?.name}</td>
+                  <td className="px-4 py-4 border-b">{s?.user?.email}</td>
+
+                  <td className="px-4 py-4 border-b">
+                    <Link to={s._id}>
+                      <IconButton>
+                        <Visibility />
+                      </IconButton>
+                    </Link>
+                  </td>
+
+                  <td className="px-4 py-4 border-b">
+                    {new Date(s.updatedAt).toLocaleString()}
+                  </td>
+
+                  <td className="px-4 py-4 border-b">
+                    <IconButton
+                      onClick={async () => {
+                        await axios.delete(
+                          `${BASE_URL}/api/campus/submission/${s._id}`,
+                          { withCredentials: true }
+                        );
+                        enqueueSnackbar("Submission deleted!", {
+                          variant: "success",
+                        });
+                        refetch();
+                      }}
+                      color="error"
+                    >
+                      <Delete sx={{ fontSize: 19 }} />
+                    </IconButton>
+                  </td>
+                </tr>
+              ))
+            ) : (
               <tr>
                 <td colSpan={5} className="text-center py-6 text-gray-500">
-                  No submissions found.
+                {isLoading ? <Box  sx={{display:"flex", alignItems:"center",width:"100%", pt:"10px" ,justifyContent:"center"}}> <CircularProgress size={20} /></Box> :
+
+                  "No submissions found."
+                }
                 </td>
               </tr>
             )}
@@ -212,6 +263,7 @@ const ExamPreview: React.FC = () => {
         <p className="text-sm text-gray-600">
           Page {page} of {totalPages}
         </p>
+
         <div className="space-x-2">
           <button
             onClick={() => setPage((p) => Math.max(p - 1, 1))}
@@ -220,6 +272,7 @@ const ExamPreview: React.FC = () => {
           >
             Prev
           </button>
+
           <button
             onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
             disabled={page === totalPages}
