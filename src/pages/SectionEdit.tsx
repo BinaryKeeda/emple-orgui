@@ -34,9 +34,9 @@ const fetchInsights = async ({
   sectionId: string
   groupId: string | undefined
 }) => {
-  if (!groupId) return null
+  // if (!groupId) return null
   const res = await axios.get(
-    `${BASE_URL}/api/campus/insights/${sectionId}/${groupId}`,
+    `${BASE_URL}/api/campus/insights/${sectionId}/`,
     { withCredentials: true }
   )
   return res.data as Insights
@@ -62,7 +62,7 @@ const SectionPage: React.FC = () => {
   } = useQuery({
     queryKey: ['sectionInsights', id, groupId],
     queryFn: () => fetchInsights({ sectionId: id as string, groupId }),
-    enabled: !!id && !!groupId,
+    // enabled: !!id && !!groupId,
     staleTime: 1000 * 60 * 5
   })
 
