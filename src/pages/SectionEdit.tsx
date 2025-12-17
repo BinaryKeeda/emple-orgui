@@ -35,6 +35,7 @@ const fetchInsights = async ({
   groupId: string | undefined
 }) => {
   // if (!groupId) return null
+  console.log(groupId)
   const res = await axios.get(
     `${BASE_URL}/api/campus/insights/${sectionId}/`,
     { withCredentials: true }
