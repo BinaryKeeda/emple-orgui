@@ -3,6 +3,7 @@ import {
   // BallotOutlined,
   // BallotOutlined,
   DashboardOutlined,
+  Person2,
   QuizOutlined,
 } from '@mui/icons-material'
 import React from 'react'
@@ -66,6 +67,12 @@ const Drawer: React.FC<DrawerProps> = React.memo(
         label: "Problem",
         path: `/dashboard/section/${sectionId}/add-problem`,
         type: "private"
+      },
+      {
+        icon:<Person2 />,
+        label:"Users",
+        path:`/dashboard/section/${sectionId}/users`,
+        type:"private"
       }
     ]
 
@@ -95,7 +102,7 @@ const Drawer: React.FC<DrawerProps> = React.memo(
                   ${showMenu ? 'justify-start' : 'lg:justify-center'}
                   ${item.upcoming ? 'cursor-not-allowed opacity-50' : ''}
                   ${isActive
-                    ? 'bg-gradient-to-r bg-black/90 text-white shadow-md'
+                    ? 'bg-linear-to-r bg-black/90 text-whlinearte shadow-md'
                     : 'hover:bg-orange-500/20 hover:text-orange-200'
                   }
                   ${!showMenu ? 'hidden lg:flex' : ''}

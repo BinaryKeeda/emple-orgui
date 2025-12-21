@@ -9,9 +9,13 @@ import {
   CircularProgress,
   IconButton,
   TextField,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 import { useSnackbar } from "notistack";
-import { CloudDownload, Delete, Visibility } from "@mui/icons-material";
+import { CloudDownload, Delete, Visibility, Info } from "@mui/icons-material";
 
 // ---------------------------
 // Interfaces
@@ -22,11 +26,21 @@ interface User {
 }
 interface Submission {
   _id: string;
-  user: User;
-  score: number;
-  attemptNo: number;
+  userId: string;
+  testId: string;
+  currSection: number;
+  ufmAttempts: number;
+  hasAgreed: boolean;
+  isSubmitted: boolean;
+  isEvaluated: boolean;
+  createdAt: string;
   updatedAt: string;
+  user: User;
+  score?: number;
+  attemptNo?: number;
 }
+
+
 
 interface Defaulter {
   _id: string;
@@ -47,7 +61,7 @@ interface ApiResponse {
 }
 
 // ---------------------------
-// Debounce Hook (prevents double fetch / spam fetch)
+// Debounce Hook
 // ---------------------------
 const useDebounce = (value: string, delay = 500) => {
   const [debounced, setDebounced] = useState(value);
@@ -61,7 +75,152 @@ const useDebounce = (value: string, delay = 500) => {
 };
 
 // ---------------------------
-// Component
+// Info Modal Component
+// ---------------------------
+const InfoModal: React.FC<{
+  open: boolean;
+  onClose: () => void;
+  submission: Submission | null;
+  onSave?: (updated: Submission) => void;
+}> = ({ open, onClose, submission, onSave }) => {
+  const [editData, setEditData] = useState<Submission | null>(submission);
+
+  React.useEffect(() => {
+    setEditData(submission);
+  }, [submission]);
+
+  if (!editData) return null;
+
+  const handleFieldChange = (field: keyof FullSubmission, value: any) => {
+    setEditData({ ...editData, [field]: value });
+  };
+
+  const handleSave = () => {
+    if (editData && onSave) {
+      onSave(editData);
+      onClose();
+    }
+  };
+
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle>Submission Details</DialogTitle>
+      <DialogContent sx={{ pt: 2, display: "flex", flexDirection: "column", gap: 2 }}>
+        <TextField
+          label="Submission ID"
+          value={editData._id}
+          disabled
+          fullWidth
+          size="small"
+        />
+        <TextField
+          label="User ID"
+          value={editData.userId}
+          disabled
+          fullWidth
+          size="small"
+        />
+        <TextField
+          label="Test ID"
+          value={editData.testId}
+          disabled
+          fullWidth
+          size="small"
+        />
+        <TextField
+          label="User Name"
+          value={editData.user.name}
+          disabled
+          fullWidth
+          size="small"
+        />
+        <TextField
+          label="User Email"
+          value={editData.user.email}
+          disabled
+          fullWidth
+          size="small"
+        />
+        <TextField
+          label="Current Section"
+          type="number"
+          value={editData.currSection}
+          onChange={(e) => handleFieldChange("currSection", parseInt(e.target.value))}
+          fullWidth
+          size="small"
+        />
+        <TextField
+          label="UFM Attempts"
+          type="number"
+          value={editData.ufmAttempts}
+          onChange={(e) => handleFieldChange("ufmAttempts", parseInt(e.target.value))}
+          fullWidth
+          size="small"
+        />
+        <Box sx={{ display: "flex", gap: 2 }}>
+          <Box sx={{ flex: 1 }}>
+            <label className="text-sm font-medium">Has Agreed</label>
+            <select
+              value={editData.hasAgreed ? "true" : "false"}
+              onChange={(e) => handleFieldChange("hasAgreed", e.target.value === "true")}
+              className="w-full mt-1 px-3 py-2 border rounded-md"
+            >
+              <option value="true">Yes</option>
+              <option value="false">No</option>
+            </select>
+          </Box>
+          <Box sx={{ flex: 1 }}>
+            <label className="text-sm font-medium">Is Submitted</label>
+            <select
+              value={editData.isSubmitted ? "true" : "false"}
+              onChange={(e) => handleFieldChange("isSubmitted", e.target.value === "true")}
+              className="w-full mt-1 px-3 py-2 border rounded-md"
+            >
+              <option value="true">Yes</option>
+              <option value="false">No</option>
+            </select>
+          </Box>
+        </Box>
+        <Box sx={{ display: "flex", gap: 2 }}>
+          <Box sx={{ flex: 1 }}>
+            <label className="text-sm font-medium">Is Evaluated</label>
+            <select
+              value={editData.isEvaluated ? "true" : "false"}
+              onChange={(e) => handleFieldChange("isEvaluated", e.target.value === "true")}
+              className="w-full mt-1 px-3 py-2 border rounded-md"
+            >
+              <option value="true">Yes</option>
+              <option value="false">No</option>
+            </select>
+          </Box>
+        </Box>
+        <TextField
+          label="Created At"
+          value={new Date(editData.createdAt).toLocaleString()}
+          disabled
+          fullWidth
+          size="small"
+        />
+        <TextField
+          label="Updated At"
+          value={new Date(editData.updatedAt).toLocaleString()}
+          disabled
+          fullWidth
+          size="small"
+        />
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button onClick={handleSave} variant="contained" color="primary">
+          Save Changes
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
+
+// ---------------------------
+// Main Component
 // ---------------------------
 const ExamPreview: React.FC = () => {
   const { slug, id } = useParams<{ slug: string; id: string }>();
@@ -70,10 +229,13 @@ const ExamPreview: React.FC = () => {
   const { enqueueSnackbar } = useSnackbar();
 
   const [email, setEmail] = useState("");
-  const debouncedEmail = useDebounce(email, 400); // prevents double fetch
+  const debouncedEmail = useDebounce(email, 400);
+
+  const [infoOpen, setInfoOpen] = useState(false);
+  const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
 
   // ---------------------------
-  // Memoized Fetch Function (prevents double invocation)
+  // Memoized Fetch Function
   // ---------------------------
   const fetchExamPreview = useMemo(
     () => async () => {
@@ -94,7 +256,7 @@ const ExamPreview: React.FC = () => {
     queryFn: fetchExamPreview,
     enabled: !!slug,
     staleTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: false, // prevents double-fetch
+    refetchOnWindowFocus: false,
   });
 
   // ---------------------------
@@ -135,11 +297,30 @@ const ExamPreview: React.FC = () => {
   };
 
   // ---------------------------
-  // Loading and Error States
+  // Info Button Handler
   // ---------------------------
-  // if (isLoading)
-  //   return <div className="text-center py-10">Loading exam data...</div>;
+  const handleOpenInfo = (submission: Submission) => {
+    setSelectedSubmission(submission);
+    setInfoOpen(true);
+  };
 
+  const handleSaveInfo = async (updated: Submission) => {
+    try {
+      await axios.put(
+        `${BASE_URL}/api/campus/submission/${updated._id}`,
+        updated,
+        { withCredentials: true }
+      );
+      enqueueSnackbar("Submission updated successfully!", { variant: "success" });
+      refetch();
+    } catch (error) {
+      enqueueSnackbar("Failed to update submission", { variant: "error" });
+    }
+  };
+
+  // ---------------------------
+  // Error State
+  // ---------------------------
   if (isError)
     return (
       <div className="text-center py-10 text-red-500">
@@ -187,7 +368,7 @@ const ExamPreview: React.FC = () => {
         value={email}
         onChange={(e) => {
           setEmail(e.target.value);
-          setPage(1); // reset pagination when filtering
+          setPage(1);
         }}
         label="Search by Email"
         fullWidth
@@ -200,6 +381,7 @@ const ExamPreview: React.FC = () => {
             <tr>
               <th className="px-4 py-3 border-b">Name</th>
               <th className="px-4 py-3 border-b">Email</th>
+              <th className="px-4 py-3 border-b">Details</th>
               <th className="px-4 py-3 border-b">Attempt</th>
               <th className="px-4 py-3 border-b">Submitted At</th>
               <th className="px-4 py-3 border-b">Delete</th>
@@ -214,9 +396,20 @@ const ExamPreview: React.FC = () => {
                   <td className="px-4 py-4 border-b">{s?.user?.email}</td>
 
                   <td className="px-4 py-4 border-b">
+                    <IconButton
+                      onClick={() => handleOpenInfo(s)}
+                      color="info"
+                      size="small"
+                      title="View & Edit Details"
+                    >
+                      <Info fontSize="small" />
+                    </IconButton>
+                  </td>
+
+                  <td className="px-4 py-4 border-b">
                     <Link to={s._id}>
-                      <IconButton>
-                        <Visibility />
+                      <IconButton size="small">
+                        <Visibility fontSize="small" />
                       </IconButton>
                     </Link>
                   </td>
@@ -238,19 +431,23 @@ const ExamPreview: React.FC = () => {
                         refetch();
                       }}
                       color="error"
+                      size="small"
                     >
-                      <Delete sx={{ fontSize: 19 }} />
+                      <Delete fontSize="small" />
                     </IconButton>
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={5} className="text-center py-6 text-gray-500">
-                {isLoading ? <Box  sx={{display:"flex", alignItems:"center",width:"100%", pt:"10px" ,justifyContent:"center"}}> <CircularProgress size={20} /></Box> :
-
-                  "No submissions found."
-                }
+                <td colSpan={6} className="text-center py-6 text-gray-500">
+                  {isLoading ? (
+                    <Box sx={{ display: "flex", alignItems: "center", width: "100%", pt: "10px", justifyContent: "center" }}>
+                      <CircularProgress size={20} />
+                    </Box>
+                  ) : (
+                    "No submissions found."
+                  )}
                 </td>
               </tr>
             )}
@@ -282,6 +479,14 @@ const ExamPreview: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Info Modal */}
+      <InfoModal
+        open={infoOpen}
+        onClose={() => setInfoOpen(false)}
+        submission={selectedSubmission}
+        onSave={handleSaveInfo}
+      />
     </div>
   );
 };

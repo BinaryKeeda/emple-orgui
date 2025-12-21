@@ -89,6 +89,7 @@ const App: React.FC = () => {
               <Route path='questionbank/edit/:slug' element={<QuestionBankEdit />} />
               <Route path='add-problem/:problemId' element={<AddProblem />} />
               <Route path='add-problem/' element={<ProblemList />} />
+              <Route path='users' element={<ManageUsers />} />
             </Route>
           </Route>
         </Routes>

@@ -25,7 +25,7 @@ import {
   DialogTitle,
   Button,
 } from '@mui/material'
-import { Delete, Search } from '@mui/icons-material'
+import { Delete, Search, Edit, Visibility, VisibilityOff } from '@mui/icons-material'
 import { useQuery } from '@tanstack/react-query'
 import { useParams } from 'react-router-dom'
 import { useSnackbar } from 'notistack'
@@ -69,6 +69,11 @@ const StudentsTable: React.FC = () => {
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
   const [deleteStatus, setDeleteStatus] = useState<string>('invite')
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false)
+  const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [newPassword, setNewPassword] = useState('')
+  const [passwordLoading, setPasswordLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
   const limit = 10
   const { id: sectionId } = useParams<{ id: string }>()
   const { enqueueSnackbar } = useSnackbar()
@@ -93,13 +98,10 @@ const StudentsTable: React.FC = () => {
   // -------------------- Delete Confirmation --------------------
   const handleRemoveClick = (userId: string, userStatus: string) => {
     setSelectedUserId(userId)
-
-    // map status → member/admin/invite
     const mapped =
       userStatus === 'member' || userStatus === 'admin'
         ? userStatus
         : 'invite'
-
     setDeleteStatus(mapped)
     setConfirmOpen(true)
   }
@@ -124,6 +126,52 @@ const StudentsTable: React.FC = () => {
     }
   }
 
+  // -------------------- Password Change --------------------
+  const handlePasswordClick = (user: User) => {
+    setSelectedUser(user)
+    setNewPassword('')
+    setShowPassword(false)
+    setPasswordModalOpen(true)
+  }
+
+  const confirmPasswordChange = async () => {
+    if (!selectedUser) return
+
+    // Validation
+    if (!newPassword.trim()) {
+      enqueueSnackbar('Password cannot be empty', { variant: 'warning' })
+      return
+    }
+
+    if (newPassword.length < 6) {
+      enqueueSnackbar('Password must be at least 6 characters', { variant: 'warning' })
+      return
+    }
+
+    setPasswordLoading(true)
+
+    try {
+      await axios.put(
+        `${BASE_URL}/api/campus/students/${selectedUser._id}/password`,
+        { password: newPassword },
+        { withCredentials: true }
+      )
+
+      enqueueSnackbar('Password updated successfully!', { variant: 'success' })
+      setPasswordModalOpen(false)
+      setSelectedUser(null)
+      setNewPassword('')
+      refetch()
+    } catch (err: any) {
+      console.error('Failed to update password', err)
+      const errorMsg =
+        err.response?.data?.message || 'Failed to update password'
+      enqueueSnackbar(errorMsg, { variant: 'error' })
+    } finally {
+      setPasswordLoading(false)
+    }
+  }
+
   const students: User[] = data?.data || []
   const total: number = data?.total || 0
 
@@ -131,7 +179,6 @@ const StudentsTable: React.FC = () => {
     <div className='space-y-4'>
       {/* 🔍 Search + Filters */}
       <Box display='flex' flexWrap='wrap' gap={2} alignItems='center'>
-        {/* Search */}
         <TextField
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -147,8 +194,7 @@ const StudentsTable: React.FC = () => {
           sx={{ maxWidth: 280 }}
         />
 
-        {/* Status Filter */}
-        {user?.user.role == "campus-superadmin" &&
+        {user?.user.role == 'campus-superadmin' && (
           <FormControl size='small' sx={{ minWidth: 160 }}>
             <Select value={status} onChange={(e) => setStatus(e.target.value)}>
               <MenuItem value='all'>All</MenuItem>
@@ -157,8 +203,7 @@ const StudentsTable: React.FC = () => {
               <MenuItem value='admin'>Admin</MenuItem>
             </Select>
           </FormControl>
-        }
-
+        )}
       </Box>
 
       {/* 🧾 Table */}
@@ -206,6 +251,15 @@ const StudentsTable: React.FC = () => {
                       )}
                     </TableCell>
                     <TableCell>
+                      <Tooltip title='Change Password'>
+                        <IconButton
+                          size='small'
+                          color='primary'
+                          onClick={() => handlePasswordClick(user)}
+                        >
+                          <Edit />
+                        </IconButton>
+                      </Tooltip>
                       <Tooltip title='Remove Student'>
                         <IconButton
                           size='small'
@@ -259,6 +313,55 @@ const StudentsTable: React.FC = () => {
           <Button onClick={() => setConfirmOpen(false)}>Cancel</Button>
           <Button color='error' onClick={confirmDelete}>
             Remove
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 🔐 Password Change Dialog */}
+      <Dialog open={passwordModalOpen} onClose={() => setPasswordModalOpen(false)} maxWidth='sm' fullWidth>
+        <DialogTitle>Change Password</DialogTitle>
+        <DialogContent className='pt-6'>
+          <Typography variant='body2' color='textSecondary' className='mb-4'>
+            Updating password for: <strong>{selectedUser?.name}</strong>
+          </Typography>
+          <TextField
+            fullWidth
+            type={showPassword ? 'text' : 'password'}
+            label='New Password'
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            margin='normal'
+            placeholder='Enter new password (min 6 characters)'
+            variant='outlined'
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position='end'>
+                  <IconButton
+                    onClick={() => setShowPassword(!showPassword)}
+                    edge='end'
+                    size='small'
+                  >
+                    {showPassword ? <VisibilityOff /> : <Visibility />}
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button 
+            onClick={() => setPasswordModalOpen(false)}
+            disabled={passwordLoading}
+          >
+            Cancel
+          </Button>
+          <Button
+            color='primary'
+            variant='contained'
+            onClick={confirmPasswordChange}
+            disabled={passwordLoading}
+          >
+            {passwordLoading ? 'Updating...' : 'Update Password'}
           </Button>
         </DialogActions>
       </Dialog>
