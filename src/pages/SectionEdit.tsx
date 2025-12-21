@@ -104,7 +104,7 @@ const SectionPage: React.FC = () => {
   }) => (
     <button
       onClick={onClick}
-      className='flex cursor-pointer items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-orange-500 to-red-600 text-white text-sm font-medium shadow-md hover:shadow-lg hover:scale-105 active:scale-95 transition-all duration-200'
+      className='flex cursor-pointer items-center gap-2 px-5 py-2.5 rounded-full bg-linear-to-r from-orange-500 to-red-600 text-white text-sm font-medium shadow-md hover:shadow-lg hover:scale-105 active:scale-95 transition-all duration-200'
     >
       <span>{label}</span>
       <svg

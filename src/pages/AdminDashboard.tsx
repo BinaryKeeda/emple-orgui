@@ -43,7 +43,7 @@ const SectionCard = ({
   return (
     <div className="relative flex flex-col rounded-xl bg-white text-gray-700 shadow-md hover:shadow-lg transition-transform hover:scale-[1.02]">
       {/* Logo */}
-      <div className="relative h-40 flex items-center justify-center bg-gradient-to-r rounded-t-xl overflow-hidden">
+      <div className="relative h-40 flex items-center justify-center  rounded-t-xl overflow-hidden">
         {!imgLoaded && section?.logo && (
           <div className="absolute inset-0 flex items-center justify-center bg-gray-200 animate-pulse">
             <Typography variant="body2" color="textSecondary">

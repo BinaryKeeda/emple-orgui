@@ -1,11 +1,19 @@
 import { useSelector } from 'react-redux'
 import type { RootState } from '../store/store'
 import { Navigate, Outlet } from 'react-router-dom'
+import { BASE_URL } from '../config/config'
 
 
 export const UserRoute = () => {
   const { user } = useSelector((s: RootState) => s.auth)
 
+  if(!user) {
+    if(BASE_URL.includes("binarykeeda")) {
+      return <Navigate to="https://login.binarykeeda.com"  />
+    }else {
+      return <Navigate to="http://localhost:5174"  />
+    }
+  }
   if (user) {
     if (user.user.role === "campus-admin") {
       return <Navigate to={`/dashboard/`} replace />
