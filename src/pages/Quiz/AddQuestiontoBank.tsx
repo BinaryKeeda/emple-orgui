@@ -426,7 +426,9 @@ export default function AddTestSectionQuestionsModal({
                     B. Madrid
                     C. Paris
                     D. Rome
-                    ANSWER: C` ;
+                    ANSWER: C
+                    MARKS: 2
+                    NEGATIVE: 0` ;
     const blob = new Blob([content], { type: "text/plain" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
