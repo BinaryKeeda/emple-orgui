@@ -91,7 +91,7 @@ const InfoModal: React.FC<{
 
   if (!editData) return null;
 
-  const handleFieldChange = (field: keyof FullSubmission, value: any) => {
+  const handleFieldChange = (field: any, value: any) => {
     setEditData({ ...editData, [field]: value });
   };
 
