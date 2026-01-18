@@ -1,12 +1,9 @@
-import { useEffect } from 'react'
-import { BASE_URL } from '../config/config'
+import { useEffect } from "react";
+import { LOGIN_URL } from "../config/config";
 
 export default function Login() {
   useEffect(() => {
-    window.location.href = `${String(BASE_URL).includes("binarykeeda.com") ? 'https://login.binarykeeda.com' : 'http://localhost:5175'}`
-  }, [])
-  return (
-    <>
-    </>
-  )
+    window.location.href = LOGIN_URL;
+  }, []);
+  return <></>;
 }
