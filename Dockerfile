@@ -4,9 +4,9 @@ FROM node:20-slim AS build
 WORKDIR /app
 
 # Copy dependency files first (better caching)
-COPY package.json package-lock.json ./
+COPY package.json yarn.lock ./
 
-RUN npm ci
+RUN yarn
 
 # Copy source
 COPY . .
@@ -29,7 +29,7 @@ ENV VITE_PORT=$VITE_PORT \
     VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID \
     VITE_MODE=$VITE_MODE
 
-RUN npm run build
+RUN yarn build
 
 
 # ---------- Runtime stage ----------
