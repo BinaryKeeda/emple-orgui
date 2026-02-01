@@ -39,6 +39,7 @@ import type { RootState } from '../store/store'
 import { useSnackbar } from 'notistack'
 import AccountMenu from './modals/AccountMenu'
 import DeleteConfirmBox from '../Layout/DeleteConfirmBox'
+import { useUser } from '../context/UserContext'
 
 /* ----------------------------- Helper function ---------------------------- */
 const getCroppedImg = async (imageSrc: string, crop: any, zoom: number) => {
@@ -492,14 +493,13 @@ const SuperAdminDashboard: React.FC = () => {
   const [limit] = useState(20); // static limit
 
   const logout = useLogout();
-  const user = useSelector((s: RootState) => s.auth.user);
   const groudId = useSelector(getGroupOwnerShip);
-  const userId = user?.user?.role === "campus-admin" ? user?.user?._id : undefined;
+  const { user } = useUser();
   const { enqueueSnackbar } = useSnackbar();
   const [brodcast, setBrodcast] = useState(false);
-
+  const userId = user?._id;
   // 🚀 Pagination-enabled hook
-  const { data, error, isLoading, refetch } = useSections(groudId ?? "", {
+  const { data, error, isLoading, refetch } = useSections(userId!, {
     page,
     limit,
     search: searchQuery,
@@ -622,9 +622,9 @@ const SuperAdminDashboard: React.FC = () => {
 
           <AccountMenu
             onLogout={logout}
-            name={user?.user?.name || ""}
-            email={user?.user?.email || ""}
-            profilePic={user?.user?.avatar || null}
+            name={user?.name || ""}
+            email={user?.email || ""}
+            profilePic={user?.avatar || null}
           />
         </div>
       </header>

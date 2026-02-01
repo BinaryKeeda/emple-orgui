@@ -1,5 +1,4 @@
 // App.tsx
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import React, { Suspense, useEffect } from 'react'
 import Layout from './Layout/Layout'
 import { useDispatch, useSelector } from 'react-redux'
@@ -14,6 +13,8 @@ import AddProblem from './pages/AddProblem'
 import ProblemList from './pages/ProblemList'
 import ExamPreview from './pages/ExamPreview'
 import UserTestPreview from './pages/UserTestPreview'
+import { useUser } from './context/UserContext'
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
 
 // Pages (lazy imports)
 const Login = React.lazy(() => import('./pages/Login'))
@@ -31,27 +32,23 @@ const PreviewQuiz = React.lazy(() => import('./pages/QuizPreview'))
 const PreviewTest = React.lazy(() => import('./pages/TestPreview'))
 
 const App: React.FC = () => {
-  const { loading, user } = useSelector((s: RootState) => s.auth)
-  const dispatch = useDispatch<AppDispatch>()
 
-  useEffect(() => {
-    dispatch(fetchProfile())
-  }, [dispatch])
+  const { user, isFetchingUser } = useUser();
 
-  if (loading) return <Loader />
+  if (isFetchingUser) return <Loader />
 
   return (
-    <Router>
-      <Suspense fallback={<Loader />}>
+    <Suspense fallback={<Loader />}>
+      <BrowserRouter basename="/campus-admin">
         <Routes>
           {/* Public Route */}
-          <Route path="/" element={<UserRoute />}>
-            <Route index element={<Login />} />
-          </Route>
+          {/* <Route path="/" element={<UserRoute />} /> */}
+          {/* <Route index element={<Login />} /> */}
+          {/* </Route> */}
 
           {/* Dashboard (Superadmin OR Admin) */}
           <Route
-            path="/dashboard"
+            path="/"
             element={
               <RoleBasedRoute requiredRole={['campus-superadmin', 'campus-admin']} />
             }
@@ -59,7 +56,7 @@ const App: React.FC = () => {
             <Route
               index
               element={
-                user?.user.role === 'campus-admin'
+                user?.role === 'campus-admin'
                   ? <AdminDashboard />
                   : <SuperAdminDashboard />
               }
@@ -72,7 +69,7 @@ const App: React.FC = () => {
               <RoleBasedRoute requiredRole={['campus-admin', 'campus-superadmin']} />
             }
           >
-            <Route path="dashboard/section/:id" element={<Layout />}>
+            <Route path="/section/:id" element={<Layout />}>
               <Route index element={<SectionEdit />} />
               <Route path="quiz" element={<QuizList />} />
               <Route path="quiz/preview/:slug" element={<PreviewQuiz />} />
@@ -90,11 +87,12 @@ const App: React.FC = () => {
               <Route path='add-problem/:problemId' element={<AddProblem />} />
               <Route path='add-problem/' element={<ProblemList />} />
               <Route path='users' element={<ManageUsers />} />
+              <Route path='*' element={<>Not Found</>} />
             </Route>
           </Route>
         </Routes>
-      </Suspense>
-    </Router>
+      </BrowserRouter>
+    </Suspense>
   )
 }
 

@@ -18,8 +18,6 @@ const initialState: AuthState = {
 };
 
 // Login thunk
-
-
 const authSlice = createSlice({
   name: "auth",
   initialState,

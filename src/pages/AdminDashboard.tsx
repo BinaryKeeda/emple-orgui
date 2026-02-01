@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
@@ -19,15 +18,17 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Pagination,
 } from "@mui/material";
 import { useSnackbar } from "notistack";
 import { BASE_URL, LOGO } from "../config/config";
 import { useLogout } from "../hooks/useLogout";
-import type { RootState } from "../store/store";
 import NotificationsDrawer from "../Layout/NotificationDrawer";
 import useInvitation from "../hooks/useInviation";
 import AccountMenu from "./modals/AccountMenu";
 import ResetPasswordModal from "./modals/ResetPassword";
+import { useUser } from "../context/UserContext";
+import useSections from "./hooks/useSections";
 
 /* --------------------------- Section Card --------------------------- */
 const SectionCard = ({
@@ -35,7 +36,7 @@ const SectionCard = ({
   // onDelete,
 }: {
   section: { _id: string; name: string; logo: string };
-  onDelete: () => void;
+  onDelete?: () => void;
 }) => {
   const [imgLoaded, setImgLoaded] = useState(false);
   const navigate = useNavigate();
@@ -122,7 +123,7 @@ const Dashboard: React.FC = () => {
   const [resetPassword, setResetPassword] = useState<boolean>(false);
   const logout = useLogout();
   const { enqueueSnackbar } = useSnackbar();
-  const user = useSelector((s: RootState) => s.auth.user);
+  const { user } = useUser();
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 1200);
@@ -133,7 +134,11 @@ const Dashboard: React.FC = () => {
     setSelectedId(ownershipId);
     setConfirmOpen(true);
   };
-  const { data } = useInvitation({ userId:user?.user._id  as string});
+  const { data } = useInvitation({ userId: user?._id as string });
+  const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [limit] = useState(20); // static limit
+  const userId = user?._id;
   const confirmDelete = async () => {
     if (!selectedId) return;
 
@@ -158,6 +163,14 @@ const Dashboard: React.FC = () => {
       setSelectedId(null);
     }
   };
+  const { data: section, error, isLoading, refetch } = useSections(userId!, {
+    page,
+    limit,
+    search: searchQuery,
+    userId,
+  })
+  const sections = section?.data || [];
+  const pagination = section?.pagination;
 
   return (
     <>
@@ -184,45 +197,52 @@ const Dashboard: React.FC = () => {
             Reset Password
           </Button>
           {/* Logout */}
-          <AccountMenu onLogout={logout} name={user?.user?.name || ""} email={user?.user?.email || ""} profilePic={user?.user?.avatar || null} />
-         
+          <AccountMenu onLogout={logout} name={user?.name || ""} email={user?.email || ""} profilePic={user?.avatar || null} />
 
         </div>
       </header>
 
       {/* Notifications Drawer */}
-      {user?.user?._id && (
+      {user?._id && (
         <NotificationsDrawer
           notificationOpen={notificationOpen}
           setNotificationOpen={setNotificationOpen}
-          userId={user.user?._id}
+          userId={user?._id}
         />
       )}
 
-      {/* Main Section Grid */}
-      {loading ? (
-        <div className="grid grid-cols-1 p-5 mt-4 md:grid-cols-3 lg:grid-cols-5 gap-6">
-          {[...Array(5)].map((_, i) => (
-            <SectionSkeleton key={i} />
+      {isLoading ? (
+        <Box className="grid grid-cols-1 p-5 mt-4 md:grid-cols-3 lg:grid-cols-5 gap-6">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Box key={i} className="rounded-xl shadow-md bg-white p-3">
+              <Skeleton variant="rectangular" height={150} animation="wave" />
+              <Skeleton variant="text" height={30} sx={{ mt: 2 }} />
+              <Skeleton variant="rounded" height={36} width="60%" sx={{ mt: 1 }} />
+            </Box>
           ))}
-        </div>
-      ) : Array.isArray(user?.ownership) && user.ownership.length ? (
-        <div className="grid grid-cols-1 p-5 mt-4 md:grid-cols-3 lg:grid-cols-5 gap-6">
-          {user?.ownership.map((o: any) => (
-            <SectionCard
-              key={o?.section?._id}
-              section={o.section}
-              onDelete={() => handleDelete(o._id)}
+        </Box>
+      ) : sections.length ? (
+        <>
+          <div className="grid grid-cols-1 p-5 mt-4 md:grid-cols-3 lg:grid-cols-5 gap-6">
+            {sections.map((section: any) => (
+              <SectionCard key={section._id} section={section?.section} />
+            ))}
+          </div>
+
+          {/* Pagination */}
+          <Box className="flex justify-center my-5">
+            <Pagination
+              count={pagination?.totalPages || 1}
+              page={page}
+              onChange={(_, val) => setPage(val)}
+              color="primary"
             />
-          ))}
-        </div>
+          </Box>
+        </>
       ) : (
         <div className="p-6 text-center text-gray-500 border border-dashed border-gray-300 rounded-lg">
           <Typography variant="body1" gutterBottom>
-            Admin, no sections have been created yet.
-          </Typography>
-          <Typography variant="body2">
-            Ask your admin to create sections.
+            {searchQuery ? `No results found for "${searchQuery}"` : "No sections created yet."}
           </Typography>
         </div>
       )}
@@ -244,7 +264,7 @@ const Dashboard: React.FC = () => {
         </DialogActions>
       </Dialog>
 
-      <ResetPasswordModal open={resetPassword} onClose={() => {setResetPassword(false)}} /> 
+      <ResetPasswordModal open={resetPassword} onClose={() => { setResetPassword(false) }} />
     </>
   );
 };

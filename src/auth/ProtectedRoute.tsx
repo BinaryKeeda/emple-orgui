@@ -2,24 +2,25 @@ import { useSelector } from "react-redux";
 import type { RootState } from "../store/store";
 import { Navigate, Outlet } from "react-router-dom";
 import { LOGIN_URL } from "../config/config";
+import { useUser } from "../context/UserContext";
 
 export const UserRoute = () => {
-  const { user } = useSelector((s: RootState) => s.auth);
-
+  const { user, isFetchingUser } = useUser();
+  if (isFetchingUser) return <>loading...</>
   if (!user) {
     return <Navigate to={LOGIN_URL} />;
   }
   if (user) {
-    if (user.user.role === "campus-admin") {
+    if (user.role === "campus-admin") {
       return <Navigate to={`/dashboard/`} replace />;
     }
 
-    if (user.user.role === "campus-superadmin") {
+    if (user.role === "campus-superadmin") {
       return <Navigate to="/dashboard" replace />;
     }
 
-    if (user.user.role === "user" || user.user.role === "admin") {
-      window.location.href = `https://binarykeeda.com/${user.user.role}`;
+    if (user.role === "user" || user.role === "admin") {
+      window.location.href = `https://binarykeeda.com/${user.role}`;
       return null;
     }
   }
@@ -35,27 +36,29 @@ interface RoleBasedRouteProps {
 export const RoleBasedRoute: React.FC<RoleBasedRouteProps> = ({
   requiredRole,
 }) => {
-  const { user } = useSelector((s: RootState) => s.auth);
+  const { user  , isFetchingUser} = useUser();
+
+  if(isFetchingUser) return <></>
 
   if (!user) return <Navigate to="/" replace />;
 
   // ✅ If role is allowed, render route
-  if (requiredRole.includes(user.user.role)) {
+  if (requiredRole.includes(user.role)) {
     return <Outlet />;
   }
 
   // 🚀 Role-specific fallbacks ONLY if not authorized
-  if (user.user.role === "user" || user.user.role === "admin") {
-    window.location.href = `https://binarykeeda.com/${user.user.role}`;
+  if (user.role === "user" || user.role === "admin") {
+    window.location.href = `https://binarykeeda.com/${user.role}`;
     return null;
   }
 
-  if (user.user.role === "campus-admin") {
+  if (user.role === "campus-admin") {
     // fallback to their section home
     return <Navigate to={`/dashboard/`} replace />;
   }
 
-  if (user.user.role === "campus-superadmin") {
+  if (user.role === "campus-superadmin") {
     // fallback to main dashboard
     return <Navigate to="/dashboard" replace />;
   }
