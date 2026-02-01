@@ -1,13 +1,14 @@
-import { useDispatch } from 'react-redux';
-import { logoutUser } from '../store/thunks/userThunks';
-import type { AppDispatch } from '../store/store';
+import { useDescope } from '@descope/react-sdk';
+import { useQueryClient } from '@tanstack/react-query';
 
 export const useLogout = () => {
-  const dispatch = useDispatch<AppDispatch>();
+  const sdk = useDescope();
+  const queryClient = useQueryClient();
 
-  const handleLogout = () => {
-    dispatch(logoutUser());
-    window.location.reload()
+  const handleLogout = async () => {
+    await sdk.logout();
+    queryClient.clear();
+    window.location.reload();
   };
 
   return handleLogout;

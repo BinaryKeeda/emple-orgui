@@ -7,9 +7,8 @@ import {
   QuizOutlined,
 } from '@mui/icons-material'
 import React from 'react'
-import { useSelector } from 'react-redux'
 import { Link, useLocation } from 'react-router-dom'
-import type { RootState } from '../store/store'
+import { useUser } from '../context/UserContext'
 
 type NavItem = {
   icon: React.ReactNode
@@ -28,50 +27,50 @@ interface DrawerProps {
 
 const Drawer: React.FC<DrawerProps> = React.memo(
   ({ showMenu, sectionId, drawerWidth }) => {
-    const { user } = useSelector((s: RootState) => s.auth)
+    const { user } = useUser();
     const path = useLocation()
 
     const NAV_ITEMS: NavItem[] = [
       {
         icon: <DashboardOutlined sx={{ fontSize: '20px' }} />,
         label: 'Section',
-        path: `/dashboard/section/${sectionId}`,
+        path: `/section/${sectionId}`,
         type: 'private',
       },
       {
         icon: <QuizOutlined sx={{ fontSize: '20px' }} />,
         label: 'Quiz',
-        path: `/dashboard/section/${sectionId}/quiz`,
+        path: `/section/${sectionId}/quiz`,
         type: 'private',
       },
       // {
       //   icon: <BallotOutlined sx={{ fontSize: '20px' }} />,
       //   label: 'Test',
-      //   path: `/dashboard/section/${sectionId}/test`,
+      //   path: `/section/${sectionId}/test`,
       //   type: 'private',
       // },
       {
         icon: <DashboardOutlined />,
         label: 'Exam',
-        path: `/dashboard/section/${sectionId}/exam`,
+        path: `/section/${sectionId}/exam`,
         type: "private"
       },
       {
         icon: <DashboardOutlined />,
         label: 'Question Banks',
-        path: `/dashboard/section/${sectionId}/questionbank`,
+        path: `/section/${sectionId}/questionbank`,
         type: "private"
       },
       {
         icon: <CodeOutlined />,
         label: "Problem",
-        path: `/dashboard/section/${sectionId}/add-problem`,
+        path: `/section/${sectionId}/add-problem`,
         type: "private"
       },
       {
         icon:<Person2 />,
         label:"Users",
-        path:`/dashboard/section/${sectionId}/users`,
+        path:`/section/${sectionId}/users`,
         type:"private"
       }
     ]

@@ -13,7 +13,7 @@ services:
         VITE_PAYMENT_URL: ${VITE_PAYMENT_URL}
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
         VITE_MODE: ${VITE_MODE}
-
+        VITE_LOGIN_URL: ${VITE_LOGIN_URL}
     ports:
       - "5175:80"
 

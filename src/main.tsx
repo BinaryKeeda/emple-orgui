@@ -17,7 +17,13 @@ createRoot(document.getElementById('root')!).render(
     autoHideDuration={3000}
     anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
   >
-    <AuthProvider projectId={import.meta.env.VITE_APP_DESCOPE_PROJECT_ID!}>
+    <AuthProvider
+      projectId={import.meta.env.VITE_APP_DESCOPE_PROJECT_ID}
+      sessionTokenViaCookie={true}
+      refreshTokenViaCookie={true}
+      persistTokens
+    >
+
       <QueryClientProvider client={queryClient}>
         <UserProvider>
           <Provider store={store}>
@@ -26,6 +32,6 @@ createRoot(document.getElementById('root')!).render(
         </UserProvider>
       </QueryClientProvider>
     </AuthProvider>
-  </SnackbarProvider>
+  </SnackbarProvider >
 
 );

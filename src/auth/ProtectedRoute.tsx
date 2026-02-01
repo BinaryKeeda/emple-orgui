@@ -34,11 +34,15 @@ interface RoleBasedRouteProps {
 export const RoleBasedRoute: React.FC<RoleBasedRouteProps> = ({
   requiredRole,
 }) => {
-  const { user  , isFetchingUser} = useUser();
+  const { user, isFetchingUser } = useUser();
 
-  if(isFetchingUser) return <></>
+  if (isFetchingUser) return <></>
 
-  if (!user) return <Navigate to="/" replace />;
+  if (!user) {
+    window.location.replace(LOGIN_URL);
+    console.log(user)
+    return;
+  }
 
   // ✅ If role is allowed, render route
   if (requiredRole.includes(user.role)) {

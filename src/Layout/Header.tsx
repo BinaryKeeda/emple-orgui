@@ -3,8 +3,7 @@ import {  Dashboard } from '@mui/icons-material'
 import { Link } from 'react-router-dom'
 import { useLogout } from '../hooks/useLogout'
 import AccountMenu from '../pages/modals/AccountMenu'
-import type { RootState } from '../store/store'
-import { useSelector } from 'react-redux'
+import { useUser } from '../context/UserContext'
 
 interface HeaderProps {
   drawerWidth: number
@@ -12,7 +11,7 @@ interface HeaderProps {
 
 export default function Header({ drawerWidth }: HeaderProps) {
   const logout = useLogout();
-  const {user} = useSelector((s: RootState) => s.auth);
+  const {user} = useUser();
   return (
     <header
       className="relative z-40  right-0 h-[60px]"
@@ -55,7 +54,7 @@ export default function Header({ drawerWidth }: HeaderProps) {
               <Logout fontSize="small" />
             </IconButton>
           </Tooltip> */}
-          <AccountMenu onLogout={logout} name={user?.user?.name || ""} email={user?.user?.email || ""} profilePic={user?.user?.avatar || null} />
+          <AccountMenu onLogout={logout} name={user?.name || ""} email={user?.email || ""} profilePic={user?.avatar || null} />
         </div>
       </nav>
     </header>
