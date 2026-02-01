@@ -1,5 +1,3 @@
-import { useSelector } from "react-redux";
-import type { RootState } from "../store/store";
 import { Navigate, Outlet } from "react-router-dom";
 import { LOGIN_URL } from "../config/config";
 import { useUser } from "../context/UserContext";

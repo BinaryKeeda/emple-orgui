@@ -101,22 +101,22 @@ const SectionCard = ({
 };
 
 /* --------------------------- SectionCard Skeleton --------------------------- */
-const SectionSkeleton = () => (
-  <Box className="flex flex-col rounded-xl bg-white shadow-md p-4">
-    <Skeleton variant="rectangular" height={150} animation="wave" />
-    <Skeleton variant="text" width="80%" sx={{ mt: 2, mx: "auto" }} />
-    <Skeleton
-      variant="rectangular"
-      width="50%"
-      height={36}
-      sx={{ mt: 2, mx: "auto", borderRadius: 1 }}
-    />
-  </Box>
-);
+// const SectionSkeleton = () => (
+//   <Box className="flex flex-col rounded-xl bg-white shadow-md p-4">
+//     <Skeleton variant="rectangular" height={150} animation="wave" />
+//     <Skeleton variant="text" width="80%" sx={{ mt: 2, mx: "auto" }} />
+//     <Skeleton
+//       variant="rectangular"
+//       width="50%"
+//       height={36}
+//       sx={{ mt: 2, mx: "auto", borderRadius: 1 }}
+//     />
+//   </Box>
+// );
 
 /* ------------------------------- Dashboard ------------------------------ */
 const Dashboard: React.FC = () => {
-  const [loading, setLoading] = useState<boolean>(true);
+  const [_loading, setLoading] = useState<boolean>(true);
   const [notificationOpen, setNotificationOpen] = useState<boolean>(false);
   const [confirmOpen, setConfirmOpen] = useState<boolean>(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -130,12 +130,12 @@ const Dashboard: React.FC = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  const handleDelete = async (ownershipId: string) => {
-    setSelectedId(ownershipId);
-    setConfirmOpen(true);
-  };
+  // const handleDelete = async (ownershipId: string) => {
+  //   setSelectedId(ownershipId);
+  //   setConfirmOpen(true);
+  // };
   const { data } = useInvitation({ userId: user?._id as string });
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchQuery, _setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [limit] = useState(20); // static limit
   const userId = user?._id;
@@ -163,7 +163,7 @@ const Dashboard: React.FC = () => {
       setSelectedId(null);
     }
   };
-  const { data: section, error, isLoading, refetch } = useSections(userId!, {
+  const { data: section, isLoading } = useSections(userId!, {
     page,
     limit,
     search: searchQuery,

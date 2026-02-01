@@ -1,10 +1,7 @@
 // App.tsx
-import React, { Suspense, useEffect } from 'react'
+import React, { Suspense } from 'react'
 import Layout from './Layout/Layout'
-import { useDispatch, useSelector } from 'react-redux'
-import { type RootState, type AppDispatch } from './store/store'
-import { fetchProfile } from './store/thunks/userThunks'
-import { RoleBasedRoute, UserRoute } from './auth/ProtectedRoute'
+import { RoleBasedRoute } from './auth/ProtectedRoute'
 import Loader from './Layout/Loader'
 import QuestionBank from './pages/QuestionBank'
 import ExamList from './pages/ExamList'
@@ -17,7 +14,7 @@ import { useUser } from './context/UserContext'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 
 // Pages (lazy imports)
-const Login = React.lazy(() => import('./pages/Login'))
+// const Login = React.lazy(() => import('./pages/Login'))
 const AdminDashboard = React.lazy(() => import('./pages/AdminDashboard'))
 const SuperAdminDashboard = React.lazy(() => import('./pages/SuperAdminDashboard'))
 const SectionEdit = React.lazy(() => import('./pages/SectionEdit'))
