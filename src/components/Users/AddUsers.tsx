@@ -2,7 +2,6 @@ import React, { useState, useMemo } from "react";
 import axios from "axios";
 import { useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
-import { type RootState } from "../../store/store";
 import {
   Dialog,
   DialogContent,
