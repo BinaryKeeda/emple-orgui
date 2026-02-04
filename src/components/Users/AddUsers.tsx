@@ -31,6 +31,7 @@ import * as XLSX from "xlsx";
 import { BASE_URL } from "../../config/config";
 import { getGroupOwnerShip } from "../../store/selectros/userSelector";
 import { useSnackbar } from "notistack";
+import { useUser } from "../../context/UserContext";
 
 interface UserData {
   email: string;
@@ -58,8 +59,8 @@ export default function AddUsers({ open, setOpen }: AddUsersProps) {
   const [submitting, setSubmitting] = useState(false);
 
 
-  const admin = useSelector((s: RootState) => s.auth.user);
-  const adminId = admin?.user._id;
+  const admin = useUser()
+  const adminId = admin?.user?._id;
   const { id: sectionId } = useParams<{ id: string }>();
   const groupId = useSelector(getGroupOwnerShip);
 
